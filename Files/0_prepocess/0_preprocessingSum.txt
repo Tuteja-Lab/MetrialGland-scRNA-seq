@@ -1,0 +1,8 @@
+Sample	Before filtering	After filtering
+15.5_1	17769 genes across 29487 cells	17769 genes across 25384 cells
+15.5_2	17663 genes across 30757 cells	17663 genes across 24845 cells
+15.5_3	17649 genes across 18338 cells	17649 genes across 15613 cells
+19.5_4	18547 genes across 15401 cells	18547 genes across 8664 cells
+19.5_5	18283 genes across 18388 cells	18283 genes across 10641 cells
+19.5_6	18606 genes across 15444 cells	18606 genes across 8750 cells
+19.5_7	17727 genes across 10391 cells	17727 genes across 5562 cells

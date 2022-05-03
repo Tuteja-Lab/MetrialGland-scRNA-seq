@@ -1,0 +1,126 @@
+---
+title: "scRNA-seq Rat Metrial Glands"
+author: "Ha T. H. Vu"
+output: html_document
+---
+  
+```{r setup, include=FALSE}
+options(max.print = "75")
+knitr::opts_chunk$set(
+  echo = TRUE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "Files/",
+  fig.width = 8,
+  prompt = FALSE,
+  tidy = FALSE,
+  message = FALSE,
+  warning = TRUE
+)
+knitr::opts_knit$set(width = 75)
+```
+
+This is a documentation for analyses of scRNA-seq data, generated from rat metrial gland tissues on gestational day (GD) 15.5 and 19.5. <br>
+We start out by building necessary objects and functions, including the gene list from Ensembl and preprocessing function. <br>
+First, build gene and biotype list. Since this object is reused frequently in downstream analysis, I will save this as an R object. <br>
+```{r}
+library(dplyr, suppressMessages())
+library(Seurat, suppressMessages())
+library(patchwork, suppressMessages())
+library(ggplot2, suppressMessages())
+
+#1. Build 
+mart <- biomaRt::useMart("ensembl", host="http://sep2019.archive.ensembl.org", dataset = "rnorvegicus_gene_ensembl") #to make sure that we use the correct version of Ensembl
+rnor6 <- biomaRt::getBM(attributes = c("ensembl_gene_id", "external_gene_name", "chromosome_name", "start_position", "end_position", "strand", "gene_biotype"), mart = mart) #build attribute table
+mt.genes <- subset(rnor6, rnor6$chromosome_name == "MT")$external_gene_name
+save(rnor6, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/rnor6.rna")
+```
+Next, build a preprocessing function: <br>
+```{r}
+preprocess <- function(dat=rats.rna) {
+  #Initialize the Seurat object with the raw (non-normalized data)
+  rats.rna <- CreateSeuratObject(counts = dat, project = "RNA", min.cells = 1)
+  print("Information of the object before filtering:")
+  print(rats.rna)
+  
+  #Check for chrMT genes
+  existingMTgenes <- intersect(rownames(rats.rna), mt.genes)
+  rats.rna[["percent.mt"]] <- PercentageFeatureSet(rats.rna, features = existingMTgenes)
+
+  print("Visualize QC metrics as a violin plot:")
+  p1 <- VlnPlot(rats.rna, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3) + ggtitle(paste0("GD", time, "_", i))
+  print(p1)
+  
+  print("Visualize QC metrics as a scatter plot:")
+  p2 <- FeatureScatter(rats.rna, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + ggtitle(paste0("GD", time, "_", i))
+  p3 <- FeatureScatter(rats.rna, feature1 = "nFeature_RNA", feature2 = "percent.mt") + ggtitle(paste0("GD", time, "_", i))
+  print(p2+p3)
+  
+  print("nFeature_RNA percentile")
+  print(quantile(rats.rna[["nFeature_RNA"]][, 1], probs = seq(0, 1, 0.25)))
+
+  print("nCount_RNA percentile")
+  print(quantile(rats.rna[["nCount_RNA"]][, 1], probs = seq(0, 1, 0.25)))
+
+  print("percent.mt percentile")
+  print(quantile(rats.rna[["percent.mt"]][, 1], probs = seq(0, 1, 0.25)))
+}
+```
+
+```{r}
+dir <- "/work/LAS/geetu-lab/hhvu/project3_scATAC/data/scRNA-seq/"
+for (time in c("15.5", "19.5")) {
+  if (time == "15.5") {
+    for (i in 1:3) {
+      dir1 <- paste0(dir, "GD", time, "-RNA/RNA-", time, "-", i)
+      rna.data <- Read10X(data.dir = dir1)
+      preprocess(rna.data)
+    }
+  } else {
+    for (i in 4:7) {
+      dir1 <- paste0(dir, "GD", time, "-RNA/RNA-", time, "-", i)
+      rna.data <- Read10X(data.dir = dir1)
+      preprocess(rna.data)
+    }
+  }
+}
+```
+Based on the preprocessing metrics and plots, we keep cells that have $500 <$ number of genes $< 3500$ and have $\%$ MT genes $< 20\%$. I will also save the filtered objects for the next steps.
+```{r}
+dir <- "/work/LAS/geetu-lab/hhvu/project3_scATAC/"
+for (time in c("15.5", "19.5")) {
+  if (time == "15.5") {
+    for (i in 1:3) {
+      dir1 <- paste0(dir, "data/scRNA-seq/GD", time, "-RNA/RNA-", time, "-", i)
+      rna.data <- Read10X(data.dir = dir1)
+      rats.rna <- CreateSeuratObject(counts = dat, project = "RNA", min.cells = 1)
+    #Check for chrMT genes
+    existingMTgenes <- intersect(rownames(rats.rna), mt.genes)
+    rats.rna[["percent.mt"]] <- PercentageFeatureSet(rats.rna, features = existingMTgenes)
+    rats.rna <- subset(rats.rna, subset = nFeature_RNA > 500 & nFeature_RNA < 3500 & percent.mt < 20)
+    save(rats.rna, file = paste0(dir, "scRNA-seq-analysis/1_preprocess/GD", time, "_", i, "-filtered.rda"))
+    }
+  } else {
+    for (i in 4:7) {
+      dir1 <- paste0(dir, "GD", time, "-RNA/RNA-", time, "-", i)
+      rna.data <- Read10X(data.dir = dir1)
+      rats.rna <- CreateSeuratObject(counts = dat, project = "RNA", min.cells = 1)
+      #Check for chrMT genes
+      existingMTgenes <- intersect(rownames(rats.rna), mt.genes)
+      rats.rna[["percent.mt"]] <- PercentageFeatureSet(rats.rna, features = existingMTgenes)
+      rats.rna <- subset(rats.rna, subset = nFeature_RNA > 500 & nFeature_RNA < 3500 & percent.mt < 20)
+      save(rats.rna, file = paste0(dir, "scRNA-seq-analysis/1_preprocess/GD", time, "_", i, "-filtered.rda"))
+    }
+  }
+}
+```
+In conclusion, we have the following metrics before and after preprocessing. <br>
+```{r}
+sum <- read.table(paste0(dir, "github/Files/0_preprocessingSum.txt"), header = T)
+library(knitr)
+kable(sum, caption = "Preprocessing summary")
+```
+
+```{r}
+sessionInfo()
+```
