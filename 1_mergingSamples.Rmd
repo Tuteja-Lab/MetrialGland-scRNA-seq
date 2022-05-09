@@ -85,12 +85,14 @@ data <- JackStraw(gd19.5.merged, num.replicate = 100, dim = 100)
 data <- ScoreJackStraw(data, dims = 1:100)
 ```
 From the Jack Straw plot and elbow plot, we can see component 78 was the last significant one in the first 100 PCs, so we use `dim = 78` for the integration step.
+
 ```{r, eval = F}
 gd19.5.anchors <- FindIntegrationAnchors(object.list = c(gd19.5.merged, gd19.5_7), dims = 1:78)
 gd19.5.combined <- IntegrateData(anchorset = gd19.5.anchors, dims = 1:78)
 
 DefaultAssay(gd19.5.combined) <- "integrated"
 ```
+
 Next we run the standard workflow for visualization. We can see the samples are well blended now after batch correction.
 ```{r, eval = F}
 gd19.5.combined <- ScaleData(gd19.5.combined, verbose = FALSE)
@@ -102,4 +104,8 @@ gd19.5.combined <- RunUMAP(gd19.5.combined, reduction = "pca", dims = 1:100)
 ```{r}
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/2_mergedSamples/integrationGD19.5/rmChrMTgenes/gd19.5-4-5-6-7.integrated.rda")
 DimPlot(gd19.5.combined, reduction = "umap", group.by = "sample")
+
+```{r}
+sessionInfo()
+```
 ```
