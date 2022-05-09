@@ -4,7 +4,7 @@ author: "Ha T. H. Vu"
 output: html_document
 ---
   
-  ```{r setup, include=FALSE}
+```{r setup, include=FALSE}
 options(max.print = "75")
 knitr::opts_chunk$set(
   echo = TRUE,
@@ -19,13 +19,16 @@ knitr::opts_chunk$set(
 )
 knitr::opts_knit$set(width = 75)
 ```
+
 This is a documentation for analyses of scRNA-seq data, generated from rat metrial gland tissues on gestational day (GD) 15.5 and 19.5. <br>
 
 In this step, we merged the replicates in each timepoint for downsteam analysis. For GD15.5, we did not have to do Seurat integration since we did not have batch effects. For GD19.5, since replicate 7 was generated on a different day, we needed to correct for this batch effect. We would merge the replicates of the first batch (replicate 4, 5, and 6), then integrate with replicate 7. <br>
 
 ## 1. For GD15.5:
-```{r, eval = FALSE}
+```{r}
 library(Seurat)
+```
+```{r, eval = FALSE}
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/1_preprocess/GD15.5_1-filtered.rda")
 gd15.5_1 <- rats.rna
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/1_preprocess/GD15.5_2-filtered.rda")
@@ -53,7 +56,7 @@ gd15.5.merged
 
 Next, we integrate replicate GD19.5_4, _5, _6 with replicate 7. Since this step involves count correction, we remove MT genes from the gene profiles and focus on the counts of genes of interest only.
 
-```{r, eval = F}
+```{r}
 #load data
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/2_mergedSamples/integrationGD19.5/rmChrMTgenes/gd19.5.RNAmerged.rda")
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/1_preprocess/GD19.5_7-filtered.rda")
@@ -71,7 +74,9 @@ counts <- GetAssayData(gd19.5_7, assay = "RNA")
 counts <- counts[-(which(rownames(counts) %in% mt.genes)),]
 gd19.5_7 <- subset(gd19.5_7, features = rownames(counts))
 ```
+
 From here, we followed the following steps to correct for batch effects and do integration. First, we normalize the data in each object. Second, we find top 2000 most variable features (genes) in each object. With the `gd19.5.merged`, we performed PCA to determine the number of components to keep for the integration.
+
 ```{r}
 gd19.5.merged <- NormalizeData(gd19.5.merged)
 gd19.5_7 <- NormalizeData(gd19.5_7)
@@ -80,6 +85,7 @@ gd19.5_7 <- FindVariableFeatures(gd19.5_7, selection.method = "vst", nfeatures =
 gd19.5_7$sample <- '19.5_7'
 gd19.5.merged$sample <- '19.5-4-5-6'
 
+gd19.5.merged <- ScaleData(gd19.5.merged, verbose = FALSE)
 gd19.5.merged <- RunPCA(gd19.5.merged, features = VariableFeatures(object = gd19.5.merged), npcs = 100)
 data <- JackStraw(gd19.5.merged, num.replicate = 100, dim = 100)
 data <- ScoreJackStraw(data, dims = 1:100)
@@ -104,8 +110,8 @@ gd19.5.combined <- RunUMAP(gd19.5.combined, reduction = "pca", dims = 1:100)
 ```{r}
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/2_mergedSamples/integrationGD19.5/rmChrMTgenes/gd19.5-4-5-6-7.integrated.rda")
 DimPlot(gd19.5.combined, reduction = "umap", group.by = "sample")
+```
 
 ```{r}
 sessionInfo()
-```
 ```
