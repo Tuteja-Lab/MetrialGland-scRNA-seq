@@ -89,6 +89,8 @@ gd19.5.merged <- ScaleData(gd19.5.merged, verbose = FALSE)
 gd19.5.merged <- RunPCA(gd19.5.merged, features = VariableFeatures(object = gd19.5.merged), npcs = 100)
 data <- JackStraw(gd19.5.merged, num.replicate = 100, dim = 100)
 data <- ScoreJackStraw(data, dims = 1:100)
+JackStrawPlot(object = data)
+ElbowPlot(data, ndims = 100)
 ```
 From the Jack Straw plot and elbow plot, we can see component 78 was the last significant one in the first 100 PCs, so we use `dim = 78` for the integration step.
 
