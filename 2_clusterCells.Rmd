@@ -61,24 +61,65 @@ data <- RunPCA(data, features = VariableFeatures(object = data), npcs = 100)
 data <- JackStraw(data, num.replicate = 100, dims = 100)
 data <- ScoreJackStraw(data, dims  = 1:100)
 
-pdf("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_JackStrawPlot-dims100.pdf", width = 10, height = 8)
 JackStrawPlot(data, dims = 1:100)
-dev.off()
 
-pdf("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_ElbowPlot.pdf", width = 10, height = 8)
 ElbowPlot(data, ndims = 100)
-dev.off()
+```
+From the Jack Straw plot and elbow plot, we can see component 72 was the last significant one in the first 100 PCs, so we use `dim = 72` for the finding clusters step.
 
+```{r}
 # Cluster cells + UMAP
 dim <- 72
 data <- FindNeighbors(data, dims = 1:dim)
 
 data <- FindClusters(data, resolution = 0.8)
 data <- RunUMAP(data, dims = 1:dim)
-pdf("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_dimPlot-res0.8.pdf", width = 10, height = 8)
+
 DimPlot(data, reduction = "umap")
-dev.off()
+
 table(Idents(data))
 
-save(data, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_res0.8.rda")
+#save(data, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_res0.8.rda")
+```
+
+## 2. GD19.5 cells
+First, we determine the demensions to keep of the dataset. Since our data had been normalized and scaled from the integration step, we will calculate and generate the Jack Straw plot and elbow plot directly.
+```{r}
+set.seed(1234)
+
+load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/2_mergedSamples/integrationGD19.5/rmChrMTgenes/gd19.5-4-5-6-7.integrated.rda")
+
+data <- gd19.5.combined
+
+DefaultAssay(data) <- "integrated"
+
+# PCA
+data <- RunPCA(data, features = VariableFeatures(object = data), npcs = 100)
+
+# Determining dimensions
+data <- JackStraw(data, num.replicate = 100, dims = 100)
+data <- ScoreJackStraw(data, dims  = 1:100)
+
+
+JackStrawPlot(data, dims = 1:100)
+
+ElbowPlot(data, ndims = 100)
+```
+
+From the Jack Straw plot and elbow plot, we can see component 77 was the last significant one in the first 100 PCs, so we use `dim = 77` for the finding clusters step.
+
+```{r}
+# Cluster cells + UMAP
+dim <- 77
+data <- FindNeighbors(data, dims = 1:dim)
+
+#test resolutions
+data2 <- FindClusters(data, resolution = 0.8)
+data2 <- RunUMAP(data2, dims = 1:dim)
+
+DimPlot(data2, reduction = "umap")
+
+table(Idents(data2))
+
+#save(data2, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/gd19.5-4-5-6-7_res0.8.rda")
 ```

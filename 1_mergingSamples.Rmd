@@ -11,7 +11,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "Files/",
-  fig.width = 8,
+  fig.width = 15,
   prompt = FALSE,
   tidy = FALSE,
   message = FALSE,
@@ -92,6 +92,7 @@ data <- ScoreJackStraw(data, dims = 1:100)
 JackStrawPlot(object = data, dims = 1:100)
 ElbowPlot(data, ndims = 100)
 ```
+
 From the Jack Straw plot and elbow plot, we can see component 78 was the last significant one in the first 100 PCs, so we use `dim = 78` for the integration step.
 
 ```{r, eval = F}
