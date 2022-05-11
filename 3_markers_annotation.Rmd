@@ -1,0 +1,97 @@
+---
+title: "scRNA-seq Rat Metrial Glands"
+author: "Ha T. H. Vu"
+output: html_document
+---
+  
+```{r setup, include=FALSE}
+options(max.print = "75")
+knitr::opts_chunk$set(
+  echo = TRUE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "Files/",
+  fig.width = 15,
+  prompt = FALSE,
+  tidy = FALSE,
+  message = FALSE,
+  warning = TRUE
+)
+knitr::opts_knit$set(width = 75)
+```
+
+This is a documentation for analyses of scRNA-seq data, generated from rat metrial gland tissues on gestational day (GD) 15.5 and 19.5. <br>
+
+We will use differential expression analysis within each timepoint to find the genes enriched in each cluster, then annotate the clusters using known markers of each cell type. First, save the known markers into vectors:
+```{r}
+tbmarkers <- c("Prl5a1", "Prl7b1")
+nkmarkers <- c("Nkg7", "Prf1", "Gzmb", "Gzmbl2")
+endomarkers <- c("Cdh5", "Plvap", "Adgrl4", "Egfl7")
+macromarkers <- c("C1qa", "Lyz2", "Aif1", "Cybb")
+vascularmarkers <- c("Acta2", "Myl9", "Tagln", "Myh11")
+```
+  
+## 1. GD15.5 clusters
+```{r}
+library(dplyr)
+library(Seurat)
+library(patchwork)
+library(ggplot2)
+set.seed(1234)
+
+load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_res0.8.rda")
+
+gd15.5.markers.res0.8.wilcoxin <- FindAllMarkers(data, only.pos = TRUE, logfc.threshold=0)
+
+save(gd15.5.markers.res0.8.wilcoxin, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5.markers.res0.8.wilcoxin.rda")
+
+data <- gd15.5.markers.res0.8.wilcoxin 
+data <- subset(data, data$p_val_adj <= 0.05)
+
+for (i in levels(data$cluster)) {
+  subcluster <- subset(data, data$cluster == i)
+  subcluster <- subset(subcluster, subcluster$avg_log2FC >= log2(1.5))
+  file <- paste0("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/res0.8/gd15.5-wilcoxin-cluster", i, ".txt")
+  #write.table(subcluster, file, sep = '\t', quote = F)
+  print(paste("Cluster", i, "at GD15.5 has:", length(unique(subcluster$gene)), "genes."))
+  print(paste("Cluster", i, "at GD15.5 has the following known markers:",
+              intersect(unique(subcluster$gene), tbmarkers), "(trophoblast cells);",
+              intersect(unique(subcluster$gene), nkmarkers), "(natural killer cells);",
+              intersect(unique(subcluster$gene), endomarkers), "(endothelial cells);",
+              intersect(unique(subcluster$gene), macromarkers), "(macrophage cells);",
+              intersect(unique(subcluster$gene), vascularmarkers), "(vascular smooth muscle cells)."))
+}
+```
+
+## 2. GD19.5 clusters
+```{r}
+set.seed(1234)
+
+load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/gd19.5-4-5-6-7_res0.8.rda")
+data <- data2
+DefaultAssay(data) <- "RNA"
+
+gd19.5.markers.res0.8.wilcoxin <- FindAllMarkers(data, only.pos = TRUE, logfc.threshold=0)
+
+save(gd19.5.markers.res0.8.wilcoxin, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/gd19.5.markers.res0.8.wilcoxin.rda")
+
+data <- gd19.5.markers.res0.8.wilcoxin 
+data <- subset(data, data$p_val_adj <= 0.05)
+
+for (i in levels(data$cluster)) {
+  subcluster <- subset(data, data$cluster == i)
+  subcluster <- subset(subcluster, subcluster$avg_log2FC >= log2(1.5))
+  file <- paste0("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/res0.8/gd19.5-wilcoxin-cluster", i, ".txt")
+  #write.table(subcluster, file, sep = '\t', quote = F)
+  print(paste("Cluster", i, "at GD15.5 has the following known markers:",
+              intersect(unique(subcluster$gene), tbmarkers), "(trophoblast cells);",
+              intersect(unique(subcluster$gene), nkmarkers), "(natural killer cells);",
+              intersect(unique(subcluster$gene), endomarkers), "(endothelial cells);",
+              intersect(unique(subcluster$gene), macromarkers), "(macrophage cells);",
+              intersect(unique(subcluster$gene), vascularmarkers), "(vascular smooth muscle cells)."))
+}
+```
+
+```{r}
+sessionInfo()
+```
