@@ -123,3 +123,7 @@ table(Idents(data2))
 
 #save(data2, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/gd19.5-4-5-6-7_res0.8.rda")
 ```
+
+```{r}
+sessionInfo()
+```
