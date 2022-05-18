@@ -24,11 +24,12 @@ This is a documentation for analyses of scRNA-seq data, generated from rat metri
 
 We will use differential expression analysis within each timepoint to find the genes enriched in each cluster, then annotate the clusters using known markers of each cell type. First, save the known markers into vectors:
 ```{r}
-tbmarkers <- c("Prl5a1", "Prl7b1")
-nkmarkers <- c("Nkg7", "Prf1", "Gzmb", "Gzmbl2")
+tbmarkers <- c("Prl5a1", "Prl7b1", "Krt7", "Krt8", "Krt18")
+nkmarkers <- c("Nkg7", "Prf1", "Gzmm", "Gzmbl2")
 endomarkers <- c("Cdh5", "Plvap", "Adgrl4", "Egfl7")
 macromarkers <- c("C1qa", "Lyz2", "Aif1", "Cybb")
 vascularmarkers <- c("Acta2", "Myl9", "Tagln", "Myh11")
+features <- c(tbmarkers, nkmarkers, endomarkers, macromarkers, vascularmarkers)
 ```
   
 ## 1. GD15.5 clusters
@@ -37,30 +38,41 @@ library(dplyr)
 library(Seurat)
 library(patchwork)
 library(ggplot2)
+library(knitr)
 set.seed(1234)
 
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_res0.8.rda")
 
 gd15.5.markers.res0.8.wilcoxin <- FindAllMarkers(data, only.pos = TRUE, logfc.threshold=0)
 
-save(gd15.5.markers.res0.8.wilcoxin, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5.markers.res0.8.wilcoxin.rda")
+#save(gd15.5.markers.res0.8.wilcoxin, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5.markers.res0.8.wilcoxin.rda")
 
-data <- gd15.5.markers.res0.8.wilcoxin 
-data <- subset(data, data$p_val_adj <= 0.05)
+gd15.5.markers.res0.8.wilcoxin <- subset(gd15.5.markers.res0.8.wilcoxin, gd15.5.markers.res0.8.wilcoxin$p_val_adj <= 0.05)
 
-for (i in levels(data$cluster)) {
-  subcluster <- subset(data, data$cluster == i)
+for (i in levels(gd15.5.markers.res0.8.wilcoxin$cluster)) {
+  subcluster <- subset(gd15.5.markers.res0.8.wilcoxin, data$cluster == i)
   subcluster <- subset(subcluster, subcluster$avg_log2FC >= log2(1.5))
   file <- paste0("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/res0.8/gd15.5-wilcoxin-cluster", i, ".txt")
   #write.table(subcluster, file, sep = '\t', quote = F)
   print(paste("Cluster", i, "at GD15.5 has:", length(unique(subcluster$gene)), "genes."))
   print(paste("Cluster", i, "at GD15.5 has the following known markers:",
-              intersect(unique(subcluster$gene), tbmarkers), "(trophoblast cells);",
-              intersect(unique(subcluster$gene), nkmarkers), "(natural killer cells);",
-              intersect(unique(subcluster$gene), endomarkers), "(endothelial cells);",
-              intersect(unique(subcluster$gene), macromarkers), "(macrophage cells);",
-              intersect(unique(subcluster$gene), vascularmarkers), "(vascular smooth muscle cells)."))
+              toString(intersect(unique(subcluster$gene), tbmarkers)), "(invasive trophoblast cells);",
+              toString(intersect(unique(subcluster$gene), nkmarkers)), "(natural killer cells);",
+              toString(intersect(unique(subcluster$gene), endomarkers)), "(endothelial cells);",
+              toString(intersect(unique(subcluster$gene), macromarkers)), "(macrophage cells);",
+              toString(intersect(unique(subcluster$gene), vascularmarkers)), "(smooth muscle cells)."))
 }
+```
+
+We can also plot the expression level of the markers in an UMAP for visualization of the cell clusters.
+```{r}
+FeaturePlot(data, features = features)
+```
+
+We conclude the cell clusters as the following identities:
+```{r}
+sum <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/MetrialGland-scRNA-seq/Files/gd15.5-cellIdentities.txt", header = T, sep = "\t")
+kable(sum, caption = "GD15.5 summary")
 ```
 
 ## 2. GD19.5 clusters
@@ -73,23 +85,31 @@ DefaultAssay(data) <- "RNA"
 
 gd19.5.markers.res0.8.wilcoxin <- FindAllMarkers(data, only.pos = TRUE, logfc.threshold=0)
 
-save(gd19.5.markers.res0.8.wilcoxin, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/gd19.5.markers.res0.8.wilcoxin.rda")
+#save(gd19.5.markers.res0.8.wilcoxin, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/gd19.5.markers.res0.8.wilcoxin.rda")
 
-data <- gd19.5.markers.res0.8.wilcoxin 
-data <- subset(data, data$p_val_adj <= 0.05)
+gd19.5.markers.res0.8.wilcoxin <- subset(gd19.5.markers.res0.8.wilcoxin, gd19.5.markers.res0.8.wilcoxin$p_val_adj <= 0.05)
 
-for (i in levels(data$cluster)) {
+for (i in levels(gd19.5.markers.res0.8.wilcoxin$cluster)) {
   subcluster <- subset(data, data$cluster == i)
   subcluster <- subset(subcluster, subcluster$avg_log2FC >= log2(1.5))
   file <- paste0("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/res0.8/gd19.5-wilcoxin-cluster", i, ".txt")
   #write.table(subcluster, file, sep = '\t', quote = F)
   print(paste("Cluster", i, "at GD15.5 has the following known markers:",
-              intersect(unique(subcluster$gene), tbmarkers), "(trophoblast cells);",
-              intersect(unique(subcluster$gene), nkmarkers), "(natural killer cells);",
-              intersect(unique(subcluster$gene), endomarkers), "(endothelial cells);",
-              intersect(unique(subcluster$gene), macromarkers), "(macrophage cells);",
-              intersect(unique(subcluster$gene), vascularmarkers), "(vascular smooth muscle cells)."))
+              toString(intersect(unique(subcluster$gene), tbmarkers)), "(invasive trophoblast cells);",
+              toString(ntersect(unique(subcluster$gene), nkmarkers)), "(natural killer cells);",
+              toString(intersect(unique(subcluster$gene), endomarkers)), "(endothelial cells);",
+              toString(intersect(unique(subcluster$gene), macromarkers)), "(macrophage cells);",
+              toString(intersect(unique(subcluster$gene), vascularmarkers)), "(smooth muscle cells)."))
 }
+```
+```{r}
+FeaturePlot(data, features = features)
+```
+
+We conclude the cell clusters as the following identities:
+```{r}
+sum <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/MetrialGland-scRNA-seq/Files/gd19.5-cellIdentities.txt", header = T, sep = "\t")
+kable(sum, caption = "GD19.5 summary")
 ```
 
 ```{r}

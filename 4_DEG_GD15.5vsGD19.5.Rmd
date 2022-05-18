@@ -48,16 +48,21 @@ twotimepoint <- merge(gd15.5, gd19.5)
 
 DefaultAssay(twotimepoint) <- "RNA"
 
-save(twotimepoint, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/twotimepoint.rda")
+#save(twotimepoint, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/twotimepoint.rda")
 
 
-trophoblast.markers <- FindMarkers(twotimepoint, ident.1 = "gd15.5_23-TBC", ident.2 = "gd19.5_6-TBC", verbose = FALSE, logfc.threshold = 0) 
+trophoblast.markers <- FindMarkers(twotimepoint, ident.1 = "gd19.5_6-TBC", ident.2 = "gd15.5_23-TBC", verbose = FALSE, logfc.threshold = 0) 
 
-save(trophoblast.markers, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/trophoblast.markers.rda")
+#save(trophoblast.markers, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/trophoblast.markers.rda")
 
-gd15.5tbc <- subset(trophoblast.markers, trophoblast.markers$p_val_adj <= 0.05 & trophoblast.markers$avg_log2FC >= log2(1.5))
+gd15.5tbc <- subset(trophoblast.markers, trophoblast.markers$p_val_adj <= 0.05 & trophoblast.markers$avg_log2FC <= -log2(1.5))
+dim(gd15.5tbc)
+head(gd15.5tbc)
 #write.table(gd15.5tbc, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd15.5TBC.txt", sep = "\t", row.names = F, quote = F)
-gd19.5tbc <- subset(trophoblast.markers, trophoblast.markers$p_val_adj <= 0.05 & trophoblast.markers$avg_log2FC <= -log2(1.5))
+
+gd19.5tbc <- subset(trophoblast.markers, trophoblast.markers$p_val_adj <= 0.05 & trophoblast.markers$avg_log2FC >= log2(1.5))
+dim(gd19.5tbc)
+head(gd19.5tbc)
 #write.table(gd19.5tbc, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd19.5TBC.txt", sep = "\t", row.names = F, quote = F)
 ```
 
