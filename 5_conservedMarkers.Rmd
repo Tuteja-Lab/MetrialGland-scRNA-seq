@@ -81,6 +81,8 @@ ggplot(enrichmentOutput,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
 
 #to get genes in each cell types after PlacentaCellEnrich:
 evt1 <- humanOrthologs[humanOrthologs$Human.gene.stable.ID %in% assay(output2[[2]]$EVT)[,1] , "Gene.name"]
+tpm1genes1 <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
+
 ```
 
 Carry out analysis with Suryawanshi et al. data:
@@ -129,6 +131,8 @@ ggplot(enrichmentOutput, aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
 
 #to get genes in each cell types after PlacentaCellEnrich:
 evt2 <- humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output2[[2]]$EVT)[,1], "Gene.name"]
+tpm1genes2 <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
+
 ```
 
 Carry out analysis with Liu et al. data: <br>
@@ -164,6 +168,8 @@ df$HE8W_STB <- rowMeans(f[, colnames(f)[grep("HE8W_STB", colnames(f))]])
 df$HE8W_STR <- rowMeans(f[, colnames(f)[grep("HE8W_STR", colnames(f))]])
 rownames(df) <- df$genes
 df <- df[,-1]
+write.table(df, "/work/LAS/geetu-lab/hhvu/liu.scRNAseq.humanPlacenta/meanTPMlike_byCellTypes.txt", quote = F, sep = "\t", row.names = T)
+
 se <- SummarizedExperiment(assays = SimpleList(as.matrix(df)), rowData = row.names(df), colData = colnames(df))
 te.dataset <- teGeneRetrieval(se, expressedGeneThreshold = 1, maxNumberOfTissues = 4)
 ```
@@ -199,5 +205,7 @@ ggplot(en.output.liu,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
 
 #to get genes in each cell types after PlacentaCellEnrich:
 evt3<-humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output.liu[[2]]$HE8W_EVT)[,1], "Gene.name"]
+tpm1genes3 <- rownames(df[df$HE8W_EVT >= 1 | df$HE24W_EVT >= 1 & rownames(df) %in% inputGenes, ])
+
 ```
   
