@@ -66,6 +66,36 @@ head(gd19.5tbc)
 #write.table(gd19.5tbc, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd19.5TBC.txt", sep = "\t", row.names = F, quote = F)
 ```
 
+We can assess the functional relevance of the differentially expressed genes at each timepoint using gene ontology analysis.
+```{r}
+library("org.Rn.eg.db")
+library("clusterProfiler")
+
+load("/work/LAS/geetu-lab/hhvu/project3_scATAC/rnor6.rda")
+go <- function(genes) {
+  GO <- enrichGO(gene = genes, OrgDb=org.Rn.eg.db, ont = "BP", pvalueCutoff = 0.05, qvalueCutoff = 0.05, maxGSSize=500, readable = T, keyType = "ENSEMBL")
+  goSimplify <- simplify(GO)
+  res <- as.data.frame(goSimplify)
+  res$Rank <- seq(1, nrow(res))
+  res$GeneRatio <- sapply(strsplit(res$GeneRatio, "/"), function(x) as.numeric(x[1])/as.numeric(x[2]))
+  res$BgRatio <- sapply(strsplit(res$BgRatio, "/"), function(x) as.numeric(x[1])/as.numeric(x[2]))
+  res$Fold <- as.numeric(res$GeneRatio)/as.numeric(res$BgRatio)
+  res <- res[res$qvalue <= 0.05 & res$Fold >= 2 & res$Count >= 5,]
+  
+  return(res)
+}
+
+g <- rnor6[rnor6$gene_name %in% rownames(gd15.5tbc),]
+r <- go(g$ensembl_gene_id)
+head(r)
+#save(r, file="/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd15.5TBC_goRats-max500-simplified.rda")
+
+g <- rnor6[rnor6$gene_name %in% rownames(gd19.5tbc),]
+r <- go(g$ensembl_gene_id)
+head(r)
+#save(r, file="/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd19.5TBC_goRats-max500-simplified.rda")
+```
+
 ```{r}
 sessionInfo()
 ```

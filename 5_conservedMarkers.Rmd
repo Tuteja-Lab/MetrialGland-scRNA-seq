@@ -1,0 +1,203 @@
+---
+title: "scRNA-seq Rat Metrial Glands"
+author: "Ha T. H. Vu"
+output: html_document
+---
+  
+```{r setup, include=FALSE}
+options(max.print = "75")
+knitr::opts_chunk$set(
+  echo = TRUE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "Files/",
+  fig.width = 15,
+  prompt = FALSE,
+  tidy = FALSE,
+  message = FALSE,
+  warning = TRUE
+)
+knitr::opts_knit$set(width = 75)
+```
+
+This is a documentation for analyses of scRNA-seq data, generated from rat metrial gland tissues on gestational day (GD) 15.5 and 19.5. <br>
+
+In this step, we will explore the conserved markers between rat and human trophoblast cells. We first carry out enrichment analysis with `PlacentaCellEnrich`. We combine markers of rat invasive trophoblast clusters at both timepoints, and compare the gene list with human placenta single cell data from Vento-Tormo et al., Suryawanshi et al., and Liu et al.
+
+```{r}
+library(TissueEnrich)
+
+load(file = "/work/LAS/geetu-lab/hhvu/combine-test-expression1.Rdata")
+
+ratHumanOrthologs <- dataset$GRCH38$ratHumanOrthologs
+humanGeneMapping <- dataset$GRCH38$humanGeneMapping
+
+s1 <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/res0.8/gd15.5-wilcoxin-cluster23-genes.txt", header = F)
+s2 <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/res0.8/gd19.5-wilcoxin-cluster6-genes.txt", header = F)
+```
+Carry out analysis with Vento-Tormo et al. data:
+```{r}
+#VentoTormo Data
+d <- dataset$PlacentaDeciduaBloodData
+data <- d$expressionData
+cellDetails <- d$cellDetails
+
+organism <- "Rat"
+inputGenes <- toupper(c(s1$V1, s2$V1))
+if(organism == "Rat") {
+  humanOrthologs <- ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+  inputGenes <- humanOrthologs$Human.gene.stable.ID
+  expressionData <- data[intersect(row.names(data), ratHumanOrthologs$Human.gene.stable.ID),]
+} else {
+  #For Human
+  expressionData <- data[intersect(row.names(data), humanGeneMapping$Gene),]
+}
+se <- SummarizedExperiment(assays = SimpleList(as.matrix(expressionData)), owData = row.names(expressionData), colData = colnames(expressionData))
+cellSpecificGenesExp <- teGeneRetrieval(se,expressedGeneThreshold = 1)
+gs <- GeneSet(geneIds=toupper(inputGenes))
+output2 <- teEnrichmentCustom(gs, cellSpecificGenesExp)
+enrichmentOutput <- setNames(data.frame(assay(output2[[1]]),row.names = rowData(output2[[1]])[,1]), colData(output2[[1]])[,1])
+row.names(cellDetails) <- cellDetails$RName
+enrichmentOutput$Tissue <- cellDetails[row.names(enrichmentOutput),"CellName"]
+
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Log10PValue >= -log10(0.05))
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$fold.change >= 2)
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Tissue.Specific.Genes >= 5)
+enrichmentOutput <- enrichmentOutput[order(-enrichmentOutput$Log10PValue),]
+color <- rep("red3", dim(enrichmentOutput)[1])
+names(color) <- enrichmentOutput$Tissue
+
+ggplot(enrichmentOutput,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
+                               label = Tissue, fill = Tissue))+
+  scale_fill_manual(values=color) +
+  geom_bar(stat = 'identity', show.legend = FALSE)+
+  labs(x='', y = '-log10(adj. p-value)')+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
+          element_text(size=25))+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ggtitle("Vento-Tormo et al.")
+
+#to get genes in each cell types after PlacentaCellEnrich:
+evt1 <- humanOrthologs[humanOrthologs$Human.gene.stable.ID %in% assay(output2[[2]]$EVT)[,1] , "Gene.name"]
+```
+
+Carry out analysis with Suryawanshi et al. data:
+```{r}
+#Suryawanshi
+d <- dataset$villiDeciduaData
+data <- d$expressionData
+cellDetails <- d$cellDetails
+
+organism <- "Rat"
+inputGenes <- toupper(c(s1$V1, s2$V1))
+if(organism == "Rat") {
+  humanOrthologs <- ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+  inputGenes <- humanOrthologs$Human.gene.name
+  expressionData <- data[intersect(row.names(data), ratHumanOrthologs$Human.gene.name),]
+} else {
+  #For Human
+  expressionData <- data[intersect(row.names(data), humanGeneMapping$Gene),]
+}
+se <- SummarizedExperiment(assays = SimpleList(as.matrix(expressionData)), rowData = row.names(expressionData), colData = colnames(expressionData))
+cellSpecificGenesExp <- teGeneRetrieval(se, expressedGeneThreshold = 1)
+gs <- GeneSet(geneIds = toupper(inputGenes))
+output2 <- teEnrichmentCustom(gs,cellSpecificGenesExp)
+enrichmentOutput <- setNames(data.frame(assay(output2[[1]]), row.names = rowData(output2[[1]])[,1]), colData(output2[[1]])[,1])
+row.names(cellDetails) <- cellDetails$RName
+enrichmentOutput$Tissue <- cellDetails[row.names(enrichmentOutput),"CellName"]
+
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Log10PValue >= -log10(0.05))
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$fold.change >= 2)
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Tissue.Specific.Genes >= 5)
+enrichmentOutput <- enrichmentOutput[order(-enrichmentOutput$Log10PValue),]
+color <- rep("red3", dim(enrichmentOutput)[1])
+names(color) <- enrichmentOutput$Tissue
+
+ggplot(enrichmentOutput, aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
+                               label = Tissue.Specific.Genes, fill=Tissue))+
+  scale_fill_manual(values=color) +
+  geom_bar(stat = 'identity', show.legend = F)+
+  labs(x='', y = '-log10(adj. p-value)')+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
+          element_text(size=25))+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        panel.grid.major= element_blank(),panel.grid.minor = element_blank())+
+  ggtitle("Suryawanshi et al.")
+
+#to get genes in each cell types after PlacentaCellEnrich:
+evt2 <- humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output2[[2]]$EVT)[,1], "Gene.name"]
+```
+
+Carry out analysis with Liu et al. data: <br>
+This data is not built in with `PlacentaCellEnrich`; therefore, we need to build a `te` object as the reference dataset first. See `TissueEnrich` package for more details, as this code was adapted from the package. The TPM data was downloaded from Liu et al. NCBI Gene Expression Omnibus (GEO) under accession number GSE89497.
+```{r}
+f <- read.table("/work/LAS/geetu-lab/hhvu/liu.scRNAseq.humanPlacenta/GSE89497_Human_Placenta_TMP_V2.txt", header = T, sep = "\t")
+
+#filtering cells
+keep <- c()
+for (i in colnames(f)) {
+  if (sum(f[,i] > 0) >= 3000) {
+    keep <- c(keep, i)
+  }
+}
+f <- f[,keep]
+
+corr <- cor(f)
+keep <- c()
+for (i in rownames(corr)) {
+  if (sum(corr[i,] > 0.6) >= 2) {
+    keep <- c(keep, i)
+  }
+}
+f <- f[,keep]
+f <- f/100 #we want to use the TPM-like values, as in PlacentaCellEnrich paper.
+
+types <- c("HE24W_EVT", "HE8W_CTB", "HE8W_EVT", "HE8W_STB", "HE8W_STR")
+df <- data.frame(genes=rownames(f), HE24W_EVT=NA, HE8W_CTB=NA, HE8W_EVT=NA, HE8W_STB=NA, HE8W_STR=NA)
+df$HE24W_EVT <- rowMeans(f[, colnames(f)[grep("HE24W_EVT", colnames(f))]])
+df$HE8W_CTB <- rowMeans(f[, colnames(f)[grep("HE8W_CTB", colnames(f))]])
+df$HE8W_EVT <- rowMeans(f[, colnames(f)[grep("HE8W_EVT", colnames(f))]])
+df$HE8W_STB <- rowMeans(f[, colnames(f)[grep("HE8W_STB", colnames(f))]])
+df$HE8W_STR <- rowMeans(f[, colnames(f)[grep("HE8W_STR", colnames(f))]])
+rownames(df) <- df$genes
+df <- df[,-1]
+se <- SummarizedExperiment(assays = SimpleList(as.matrix(df)), rowData = row.names(df), colData = colnames(df))
+te.dataset <- teGeneRetrieval(se, expressedGeneThreshold = 1, maxNumberOfTissues = 4)
+```
+```{r}
+#Liu et al. dataset
+inputGenes <- toupper(c(s1$V1, s2$V1))
+humanOrthologs <- ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+inputGenes <- humanOrthologs$Human.gene.name
+gs <- GeneSet(unique(inputGenes))
+output.liu <- teEnrichmentCustom(gs, te.dataset)
+en.output.liu <- setNames(data.frame(assay(output.liu[[1]]),
+                                     row.names = rowData(output.liu[[1]])[, 1]), colData(output.liu[[1]])[, 1])
+en.output.liu$Tissue <- rownames(en.output.liu)
+
+en.output.liu <- subset(en.output.liu, en.output.liu$Log10PValue >= -log10(0.05))
+en.output.liu <- subset(en.output.liu, en.output.liu$fold.change >= 2)
+en.output.liu <- subset(en.output.liu, en.output.liu$Tissue.Specific.Genes >= 5)
+en.output.liu <- en.output.liu[order(-en.output.liu$Log10PValue),]
+color <- rep("red3", dim(en.output.liu)[1])
+
+ggplot(en.output.liu,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
+                         label = Tissue.Specific.Genes, fill=Tissue))+
+  scale_fill_manual(values=color) +
+  geom_bar(stat = 'identity', show.legend = F)+
+  labs(x='', y = '-log10(adj. p-value)')+
+  theme_bw()+
+  theme(legend.position='none', plot.margin=unit(c(1,1,1,2),"cm"))+
+  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
+          element_text(size=25))+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        panel.grid.major= element_blank(),panel.grid.minor = element_blank())+
+  ggtitle("Liu et al.")
+
+#to get genes in each cell types after PlacentaCellEnrich:
+evt3<-humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output.liu[[2]]$HE8W_EVT)[,1], "Gene.name"]
+```
+  

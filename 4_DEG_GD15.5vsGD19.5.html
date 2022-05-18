@@ -413,6 +413,96 @@ head(gd19.5tbc)
 #&gt; Ctsl       7.284066e-63  1.0270451 0.983 0.953 1.521204e-58
 #&gt; Rps15      9.016818e-58  0.8697669 0.969 0.953 1.883072e-53
 #write.table(gd19.5tbc, &quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd19.5TBC.txt&quot;, sep = &quot;\t&quot;, row.names = F, quote = F)</code></pre>
+<p>We can assess the functional relevance of the differentially expressed genes at each timepoint using gene ontology analysis.</p>
+<pre class="r"><code>library(&quot;org.Rn.eg.db&quot;)
+library(&quot;clusterProfiler&quot;)
+
+load(&quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/rnor6.rda&quot;)
+go &lt;- function(genes) {
+  GO &lt;- enrichGO(gene = genes, OrgDb=org.Rn.eg.db, ont = &quot;BP&quot;, pvalueCutoff = 0.05, qvalueCutoff = 0.05, maxGSSize=500, readable = T, keyType = &quot;ENSEMBL&quot;)
+  goSimplify &lt;- simplify(GO)
+  res &lt;- as.data.frame(goSimplify)
+  res$Rank &lt;- seq(1, nrow(res))
+  res$GeneRatio &lt;- sapply(strsplit(res$GeneRatio, &quot;/&quot;), function(x) as.numeric(x[1])/as.numeric(x[2]))
+  res$BgRatio &lt;- sapply(strsplit(res$BgRatio, &quot;/&quot;), function(x) as.numeric(x[1])/as.numeric(x[2]))
+  res$Fold &lt;- as.numeric(res$GeneRatio)/as.numeric(res$BgRatio)
+  res &lt;- res[res$qvalue &lt;= 0.05 &amp; res$Fold &gt;= 2 &amp; res$Count &gt;= 5,]
+  
+  return(res)
+}
+
+g &lt;- rnor6[rnor6$gene_name %in% rownames(gd15.5tbc),]
+r &lt;- go(g$ensembl_gene_id)
+head(r)
+#&gt;                    ID                                            Description
+#&gt; GO:0043254 GO:0043254      regulation of protein-containing complex assembly
+#&gt; GO:0002181 GO:0002181                                cytoplasmic translation
+#&gt; GO:0098754 GO:0098754                                         detoxification
+#&gt; GO:0008064 GO:0008064 regulation of actin polymerization or depolymerization
+#&gt; GO:0042255 GO:0042255                                      ribosome assembly
+#&gt; GO:0030832 GO:0030832                    regulation of actin filament length
+#&gt;            GeneRatio     BgRatio       pvalue    p.adjust      qvalue
+#&gt; GO:0043254      0.13 0.023603781 6.455787e-07 0.001285993 0.001168837
+#&gt; GO:0002181      0.07 0.006263411 3.083409e-06 0.003071075 0.002791297
+#&gt; GO:0098754      0.06 0.006785362 6.085737e-05 0.015762934 0.014326911
+#&gt; GO:0008064      0.07 0.010033057 6.623968e-05 0.015762934 0.014326911
+#&gt; GO:0042255      0.05 0.004291597 6.960126e-05 0.015762934 0.014326911
+#&gt; GO:0030832      0.07 0.010149046 7.121807e-05 0.015762934 0.014326911
+#&gt;                                                                                 geneID
+#&gt; GO:0043254 Rps3/Bax/Pfn1/Arpc1a/Arpc1b/Lcp1/Vdac2/Tmsb10/Ctnnbip1/Arf6/Mmp1/Cck/Tmsb4x
+#&gt; GO:0002181                                    Rplp0/Rpl6/Rpl18a/Rpl11/Rpl41/Rpsa/Rpl29
+#&gt; GO:0098754                                           Selenow/Gsto1/Prdx6/Gch1/Mt1/Mt2A
+#&gt; GO:0008064                                Pfn1/Arpc1a/Arpc1b/Dstnl1/Tmsb10/Arf6/Tmsb4x
+#&gt; GO:0042255                                                  Rps5/Rplp0/Rpl6/Rpl11/Rpsa
+#&gt; GO:0030832                                Pfn1/Arpc1a/Arpc1b/Dstnl1/Tmsb10/Arf6/Tmsb4x
+#&gt;            Count Rank      Fold
+#&gt; GO:0043254    13    1  5.507592
+#&gt; GO:0002181     7    2 11.176019
+#&gt; GO:0098754     6    4  8.842564
+#&gt; GO:0008064     7    5  6.976936
+#&gt; GO:0042255     5    6 11.650676
+#&gt; GO:0030832     7    7  6.897200
+#save(r, file=&quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd15.5TBC_goRats-max500-simplified.rda&quot;)
+
+g &lt;- rnor6[rnor6$gene_name %in% rownames(gd19.5tbc),]
+r &lt;- go(g$ensembl_gene_id)
+head(r)
+#&gt;                    ID
+#&gt; GO:0007565 GO:0007565
+#&gt; GO:0044706 GO:0044706
+#&gt; GO:1903489 GO:1903489
+#&gt; GO:0030879 GO:0030879
+#&gt; GO:0007589 GO:0007589
+#&gt; GO:0045953 GO:0045953
+#&gt;                                                                 Description
+#&gt; GO:0007565                                                 female pregnancy
+#&gt; GO:0044706                             multi-multicellular organism process
+#&gt; GO:1903489                                 positive regulation of lactation
+#&gt; GO:0030879                                        mammary gland development
+#&gt; GO:0007589                                             body fluid secretion
+#&gt; GO:0045953 negative regulation of natural killer cell mediated cytotoxicity
+#&gt;             GeneRatio     BgRatio       pvalue     p.adjust       qvalue
+#&gt; GO:0007565 0.19672131 0.016586441 2.819562e-19 7.212439e-16 5.870624e-16
+#&gt; GO:0044706 0.19672131 0.018558256 3.854964e-18 4.930499e-15 4.013221e-15
+#&gt; GO:1903489 0.06557377 0.001449864 4.868864e-12 4.151518e-09 3.379162e-09
+#&gt; GO:0030879 0.09836066 0.011424926 1.531761e-08 6.530408e-06 5.315480e-06
+#&gt; GO:0007589 0.08196721 0.008293220 7.007630e-08 2.560788e-05 2.084375e-05
+#&gt; GO:0045953 0.04098361 0.001159891 2.325228e-07 6.848626e-05 5.574495e-05
+#&gt;                                                                                                                                                                  geneID
+#&gt; GO:0007565 Igf2/Fosb/Ceacam11/Lgals9/Serpine1/Cr1l/Ctsl/Tpbpa/Prl2c1/Prl5a1/Prl7b1/Prl8a7/LOC684107/Prl7a3/Prl8a4/Prl4a1/Nr3c1/Calr/Hsd11b2/Slc2a1/Lamb1/Fbln1/Mmp3/Pam
+#&gt; GO:0044706 Igf2/Fosb/Ceacam11/Lgals9/Serpine1/Cr1l/Ctsl/Tpbpa/Prl2c1/Prl5a1/Prl7b1/Prl8a7/LOC684107/Prl7a3/Prl8a4/Prl4a1/Nr3c1/Calr/Hsd11b2/Slc2a1/Lamb1/Fbln1/Mmp3/Pam
+#&gt; GO:1903489                                                                                                   Prl2c1/Prl5a1/Prl7b1/Prl8a7/LOC684107/Prl7a3/Prl8a4/Prl4a1
+#&gt; GO:0030879                                                                              Ncor2/Prl2c1/Prl5a1/Prl7b1/Prl8a7/LOC684107/Prl7a3/Prl8a4/Prl4a1/Nr3c1/Gpx1/Pam
+#&gt; GO:0007589                                                                                         Ncor2/Prl2c1/Prl5a1/Prl7b1/Prl8a7/LOC684107/Prl7a3/Prl8a4/Prl4a1/Pam
+#&gt; GO:0045953                                                                                                                               Igf2/Lgals9/RT1-S3/Tap1/RT1-A1
+#&gt;            Count Rank      Fold
+#&gt; GO:0007565    24    1 11.860369
+#&gt; GO:0044706    24    2 10.600205
+#&gt; GO:1903489     8    3 45.227541
+#&gt; GO:0030879    12    4  8.609303
+#&gt; GO:0007589    10    5  9.883641
+#&gt; GO:0045953     5    6 35.334016
+#save(r, file=&quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd19.5TBC_goRats-max500-simplified.rda&quot;)</code></pre>
 <pre class="r"><code>sessionInfo()
 #&gt; R version 4.0.2 (2020-06-22)
 #&gt; Platform: x86_64-pc-linux-gnu (64-bit)
@@ -431,39 +521,42 @@ head(gd19.5tbc)
 #&gt; [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
 #&gt; 
 #&gt; attached base packages:
-#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     
+#&gt; [1] parallel  stats4    stats     graphics  grDevices utils     datasets 
+#&gt; [8] methods   base     
 #&gt; 
 #&gt; other attached packages:
-#&gt; [1] ggplot2_3.3.4      patchwork_1.0.1    SeuratObject_4.0.4 Seurat_4.1.0      
-#&gt; [5] dplyr_1.0.7       
+#&gt;  [1] clusterProfiler_3.16.1 org.Rn.eg.db_3.11.4    AnnotationDbi_1.50.3  
+#&gt;  [4] IRanges_2.22.2         S4Vectors_0.26.1       Biobase_2.48.0        
+#&gt;  [7] BiocGenerics_0.34.0    ggplot2_3.3.4          patchwork_1.0.1       
+#&gt; [10] SeuratObject_4.0.4     Seurat_4.1.0           dplyr_1.0.7           
 #&gt; 
 #&gt; loaded via a namespace (and not attached):
-#&gt;  [1] Rtsne_0.15            colorspace_2.0-3      deldir_1.0-6         
-#&gt;  [4] ellipsis_0.3.2        ggridges_0.5.2        rstudioapi_0.13      
-#&gt;  [7] spatstat.data_2.2-0   leiden_0.3.3          listenv_0.8.0        
-#&gt; [10] ggrepel_0.8.2         fansi_1.0.3           codetools_0.2-16     
-#&gt; [13] splines_4.0.2         knitr_1.39            polyclip_1.10-0      
-#&gt; [16] jsonlite_1.8.0        ica_1.0-2             cluster_2.1.0        
-#&gt; [19] png_0.1-7             uwot_0.1.10           shiny_1.5.0          
-#&gt; [22] sctransform_0.3.3     spatstat.sparse_2.0-0 compiler_4.0.2       
-#&gt; [25] httr_1.4.2            assertthat_0.2.1      Matrix_1.3-4         
-#&gt; [28] fastmap_1.1.0         lazyeval_0.2.2        limma_3.44.3         
-#&gt; [31] cli_3.3.0             later_1.1.0.1         htmltools_0.5.2      
-#&gt; [34] tools_4.0.2           igraph_1.2.6          gtable_0.3.0         
-#&gt; [37] glue_1.6.2            RANN_2.6.1            reshape2_1.4.4       
-#&gt; [40] rappdirs_0.3.3        Rcpp_1.0.8            scattermore_0.7      
-#&gt; [43] jquerylib_0.1.4       vctrs_0.4.1           nlme_3.1-149         
-#&gt; [46] lmtest_0.9-38         xfun_0.30             stringr_1.4.0        
-#&gt; [49] globals_0.13.0        mime_0.12             miniUI_0.1.1.1       
-#&gt; [52] lifecycle_1.0.1       irlba_2.3.3           goftest_1.2-2        
-#&gt; [55] future_1.19.1         MASS_7.3-53           zoo_1.8-8            
-#&gt; [58] scales_1.2.0          spatstat.core_2.3-1   promises_1.1.1       
-#&gt; [61] spatstat.utils_2.3-1  parallel_4.0.2        RColorBrewer_1.1-3   
-#&gt; [64] yaml_2.3.5            reticulate_1.16       pbapply_1.4-3        
-#&gt; [67] gridExtra_2.3         sass_0.4.1            rpart_4.1-15         
-#&gt; [70] stringi_1.7.6         rlang_1.0.2           pkgconfig_2.0.3      
-#&gt; [73] matrixStats_0.57.0    evaluate_0.15         lattice_0.20-41      
-#&gt;  [ reached getOption(&quot;max.print&quot;) -- omitted 35 entries ]</code></pre>
+#&gt;  [1] fastmatch_1.1-0       plyr_1.8.6            igraph_1.2.6         
+#&gt;  [4] lazyeval_0.2.2        splines_4.0.2         BiocParallel_1.22.0  
+#&gt;  [7] listenv_0.8.0         scattermore_0.7       urltools_1.7.3       
+#&gt; [10] digest_0.6.29         htmltools_0.5.2       GOSemSim_2.14.2      
+#&gt; [13] viridis_0.5.1         GO.db_3.11.4          fansi_1.0.3          
+#&gt; [16] magrittr_2.0.3        memoise_1.1.0         tensor_1.5           
+#&gt; [19] cluster_2.1.0         ROCR_1.0-11           limma_3.44.3         
+#&gt; [22] graphlayouts_0.7.0    globals_0.13.0        matrixStats_0.57.0   
+#&gt; [25] spatstat.sparse_2.0-0 prettyunits_1.1.1     enrichplot_1.8.1     
+#&gt; [28] colorspace_2.0-3      blob_1.2.3            rappdirs_0.3.3       
+#&gt; [31] ggrepel_0.8.2         xfun_0.30             crayon_1.5.1         
+#&gt; [34] jsonlite_1.8.0        scatterpie_0.1.5      spatstat.data_2.2-0  
+#&gt; [37] survival_3.2-7        zoo_1.8-8             glue_1.6.2           
+#&gt; [40] polyclip_1.10-0       gtable_0.3.0          leiden_0.3.3         
+#&gt; [43] future.apply_1.6.0    abind_1.4-5           scales_1.2.0         
+#&gt; [46] DOSE_3.14.0           DBI_1.1.2             miniUI_0.1.1.1       
+#&gt; [49] Rcpp_1.0.8            progress_1.2.2        viridisLite_0.4.0    
+#&gt; [52] xtable_1.8-4          gridGraphics_0.5-0    reticulate_1.16      
+#&gt; [55] spatstat.core_2.3-1   europepmc_0.4         bit_4.0.4            
+#&gt; [58] htmlwidgets_1.5.2     httr_1.4.2            fgsea_1.14.0         
+#&gt; [61] RColorBrewer_1.1-3    ellipsis_0.3.2        ica_1.0-2            
+#&gt; [64] farver_2.1.0          pkgconfig_2.0.3       sass_0.4.1           
+#&gt; [67] uwot_0.1.10           deldir_1.0-6          utf8_1.2.2           
+#&gt; [70] ggplotify_0.0.5       tidyselect_1.1.2      rlang_1.0.2          
+#&gt; [73] reshape2_1.4.4        later_1.1.0.1         munsell_0.5.0        
+#&gt;  [ reached getOption(&quot;max.print&quot;) -- omitted 68 entries ]</code></pre>
 
 
 
