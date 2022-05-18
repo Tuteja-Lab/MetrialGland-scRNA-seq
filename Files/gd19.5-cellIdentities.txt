@@ -1,0 +1,8 @@
+	GD19.5 Cell Counts	GD19.5 Clusters
+Endothelial cells	1555	"Cluster 10, 20"
+Macrophage cells	7447	"Cluster 1, 7, 11, 17, 18"
+Natural killer cells	1270	Cluster 9
+Invasive trophoblast cells	1820	Cluster 6
+Smooth muscle cells	1311	"Cluster 8, 26"
+Other cells	20214	"Cluster 0, 2, 3, 4, 5, 12, 13, 14, 15, 16, 19, 21, 22, 23, 24, 25"
+Total cells	33617	
