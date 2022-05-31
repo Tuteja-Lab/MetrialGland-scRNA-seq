@@ -268,11 +268,7 @@ gs <- GeneSet(unique(inputGenes))
 output.liu <- teEnrichmentCustom(gs, te.dataset)
 en.output.liu <- setNames(data.frame(assay(output.liu[[1]]),
                                      row.names = rowData(output.liu[[1]])[, 1]), colData(output.liu[[1]])[, 1])
-en.output.liu$Tissue <- c("STB from villi at 8 weeks of pregnancy",
-                          "EVT from villi at 8 weeks of pregnancy",
-                          "EVT from decidua at 24 weeks of pregnancy",
-                          "STR from villi at 8 weeks of pregnancy",
-                          "CTB from villi at 8 weeks of pregnancy")
+en.output.liu$Tissue <- row.names(en.output.liu)
 
 en.output.liu <- subset(en.output.liu, en.output.liu$Log10PValue >= -log10(0.05) &
                           en.output.liu$fold.change >= 1.5 &
