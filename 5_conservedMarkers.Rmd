@@ -22,113 +22,203 @@ knitr::opts_knit$set(width = 75)
 
 This is a documentation for analyses of scRNA-seq data, generated from rat metrial gland tissues on gestational day (GD) 15.5 and 19.5. <br>
 
-In this step, we will explore the conserved markers between rat and human trophoblast cells. We first carry out enrichment analysis with `PlacentaCellEnrich`. We combine markers of rat invasive trophoblast clusters at both timepoints, and compare the gene list with human placenta single cell data from Vento-Tormo et al., Suryawanshi et al., and Liu et al.
+In this step, we will explore the conserved markers between rat and human trophoblast cells. We first carry out enrichment analysis with `PlacentaCellEnrich`. We combine markers of rat invasive trophoblast clusters at both timepoints, and compare the gene list with human placenta single cell data from Vento-Tormo et al., Suryawanshi et al., Xiang et al., Castel et al., and Liu et al.
 
 ```{r}
-library(TissueEnrich)
+library("TissueEnrich")
+library("tidyverse")
+library("patchwork")
 
 load(file = "/work/LAS/geetu-lab/hhvu/combine-test-expression1.Rdata")
 
 ratHumanOrthologs <- dataset$GRCH38$ratHumanOrthologs
 humanGeneMapping <- dataset$GRCH38$humanGeneMapping
 
-s1 <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/res0.8/gd15.5-wilcoxin-cluster23-genes.txt", header = F)
-s2 <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/res0.8/gd19.5-wilcoxin-cluster6-genes.txt", header = F)
+s1 <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/gd15.5-wilcoxin-cluster23-genes.txt", header = F)
+s2 <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/gd19.5-wilcoxin-cluster6-genes.txt", header = F)
+
+plotFunc <- function(data, name) {
+  p<-ggplot(data,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
+                     label = Tissue, fill = Tissue, width=0.8))+
+    scale_fill_manual(values=color) +
+    geom_bar(stat = 'identity', show.legend = FALSE)+
+    labs(x='', y = '-log10(adj. p-value)')+
+    theme_bw()+
+    #theme(legend.position='none', plot.margin=unit(c(1,1,1,2),"cm"))+
+    theme(plot.title = element_text(hjust = 0.5, size = 20), axis.title = element_text(size=20))+
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=20),
+          panel.grid.major= element_blank(),panel.grid.minor = element_blank())+
+    ggtitle(name)
+  return(p)
+}
+
 ```
 Carry out analysis with Vento-Tormo et al. data:
 ```{r}
 #VentoTormo Data
-d <- dataset$PlacentaDeciduaBloodData
-data <- d$expressionData
-cellDetails <- d$cellDetails
+d<-dataset$PlacentaDeciduaBloodData
+data<-d$expressionData
+cellDetails<-d$cellDetails
 
-organism <- "Rat"
-inputGenes <- toupper(c(s1$V1, s2$V1))
+organism<-"Rat"
+inputGenes<-toupper(unique(c(s1$V1, s2$V1)))
 if(organism == "Rat") {
-  humanOrthologs <- ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
-  inputGenes <- humanOrthologs$Human.gene.stable.ID
-  expressionData <- data[intersect(row.names(data), ratHumanOrthologs$Human.gene.stable.ID),]
+  humanOrthologs<-ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+  inputGenes<-humanOrthologs$Human.gene.stable.ID
+  expressionData<-data[intersect(row.names(data), ratHumanOrthologs$Human.gene.stable.ID),]
 } else {
   #For Human
-  expressionData <- data[intersect(row.names(data), humanGeneMapping$Gene),]
+  expressionData<-data[intersect(row.names(data), humanGeneMapping$Gene),]
 }
-se <- SummarizedExperiment(assays = SimpleList(as.matrix(expressionData)), owData = row.names(expressionData), colData = colnames(expressionData))
-cellSpecificGenesExp <- teGeneRetrieval(se,expressedGeneThreshold = 1)
-gs <- GeneSet(geneIds=toupper(inputGenes))
-output2 <- teEnrichmentCustom(gs, cellSpecificGenesExp)
-enrichmentOutput <- setNames(data.frame(assay(output2[[1]]),row.names = rowData(output2[[1]])[,1]), colData(output2[[1]])[,1])
-row.names(cellDetails) <- cellDetails$RName
-enrichmentOutput$Tissue <- cellDetails[row.names(enrichmentOutput),"CellName"]
+se<-SummarizedExperiment(assays = SimpleList(as.matrix(expressionData)),rowData = row.names(expressionData),colData = colnames(expressionData))
+cellSpecificGenesExp<-teGeneRetrieval(se,expressedGeneThreshold = 1)
+gs<-GeneSet(geneIds=toupper(inputGenes))
+output2<-teEnrichmentCustom(gs,cellSpecificGenesExp)
+enrichmentOutput<-setNames(data.frame(assay(output2[[1]]),row.names = rowData(output2[[1]])[,1]),colData(output2[[1]])[,1])
+row.names(cellDetails)<-cellDetails$RName
+enrichmentOutput$Tissue<- cellDetails[row.names(enrichmentOutput),"CellName"]
 
-enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Log10PValue >= -log10(0.05))
-enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$fold.change >= 2)
-enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Tissue.Specific.Genes >= 5)
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Log10PValue >= -log10(0.05) &
+                             enrichmentOutput$fold.change >= 1.5 &
+                             enrichmentOutput$Tissue.Specific.Genes >= 5)
+
 enrichmentOutput <- enrichmentOutput[order(-enrichmentOutput$Log10PValue),]
+#write.table(enrichmentOutput, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/ventoTormo.txt", sep = "\t", quote = F, row.names = T)
+
 color <- rep("red3", dim(enrichmentOutput)[1])
 names(color) <- enrichmentOutput$Tissue
+plotFunc(enrichmentOutput, "Vento-Tormo et al.")
 
-ggplot(enrichmentOutput,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
-                               label = Tissue, fill = Tissue))+
-  scale_fill_manual(values=color) +
-  geom_bar(stat = 'identity', show.legend = FALSE)+
-  labs(x='', y = '-log10(adj. p-value)')+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
-          element_text(size=25))+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  ggtitle("Vento-Tormo et al.")
-
-#to get genes in each cell types after PlacentaCellEnrich:
-evt1 <- humanOrthologs[humanOrthologs$Human.gene.stable.ID %in% assay(output2[[2]]$EVT)[,1] , "Gene.name"]
+#to get genes in each cell types after PlacentaCellEnrich: evt1 <- humanOrthologs[humanOrthologs$Human.gene.stable.ID %in% assay(output2[[2]]$EVT)[,1] , "Gene.name"]
+tpm1genesVT <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
+tpm1genesVT <- ratHumanOrthologs[ratHumanOrthologs$Human.gene.stable.ID %in% tpm1genesVT, "Human.gene.name"]
 ```
 
 Carry out analysis with Suryawanshi et al. data:
 ```{r}
 #Suryawanshi
-d <- dataset$villiDeciduaData
-data <- d$expressionData
-cellDetails <- d$cellDetails
+d<-dataset$villiDeciduaData
+data<-d$expressionData
+cellDetails<-d$cellDetails
 
-organism <- "Rat"
-inputGenes <- toupper(c(s1$V1, s2$V1))
+organism<-"Rat"
+inputGenes<-toupper(c(s1$V1, s2$V1))
 if(organism == "Rat") {
-  humanOrthologs <- ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
-  inputGenes <- humanOrthologs$Human.gene.name
-  expressionData <- data[intersect(row.names(data), ratHumanOrthologs$Human.gene.name),]
+  humanOrthologs<-ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+  inputGenes<-humanOrthologs$Human.gene.name
+  expressionData<-data[intersect(row.names(data), ratHumanOrthologs$Human.gene.name),]
 } else {
   #For Human
-  expressionData <- data[intersect(row.names(data), humanGeneMapping$Gene),]
+  expressionData<-data[intersect(row.names(data), humanGeneMapping$Gene),]
 }
-se <- SummarizedExperiment(assays = SimpleList(as.matrix(expressionData)), rowData = row.names(expressionData), colData = colnames(expressionData))
-cellSpecificGenesExp <- teGeneRetrieval(se, expressedGeneThreshold = 1)
-gs <- GeneSet(geneIds = toupper(inputGenes))
-output2 <- teEnrichmentCustom(gs,cellSpecificGenesExp)
-enrichmentOutput <- setNames(data.frame(assay(output2[[1]]), row.names = rowData(output2[[1]])[,1]), colData(output2[[1]])[,1])
-row.names(cellDetails) <- cellDetails$RName
-enrichmentOutput$Tissue <- cellDetails[row.names(enrichmentOutput),"CellName"]
+se<-SummarizedExperiment(assays = SimpleList(as.matrix(expressionData)),rowData = row.names(expressionData),colData = colnames(expressionData))
+cellSpecificGenesExp<-teGeneRetrieval(se,expressedGeneThreshold = 1)
+gs<-GeneSet(geneIds=toupper(inputGenes))
+output2<-teEnrichmentCustom(gs,cellSpecificGenesExp)
+enrichmentOutput<-setNames(data.frame(assay(output2[[1]]),row.names = rowData(output2[[1]])[,1]),colData(output2[[1]])[,1])
+row.names(cellDetails)<-cellDetails$RName
+enrichmentOutput$Tissue<- cellDetails[row.names(enrichmentOutput),"CellName"]
 
-enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Log10PValue >= -log10(0.05))
-enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$fold.change >= 2)
-enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Tissue.Specific.Genes >= 5)
+enrichmentOutput <- subset(enrichmentOutput, enrichmentOutput$Log10PValue >= -log10(0.05) &
+                             enrichmentOutput$fold.change >= 1.5 &
+                             enrichmentOutput$Tissue.Specific.Genes >= 5)
+
 enrichmentOutput <- enrichmentOutput[order(-enrichmentOutput$Log10PValue),]
+#write.table(enrichmentOutput, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/suryawanshi.txt", sep = "\t", quote = F, row.names = T)
+
 color <- rep("red3", dim(enrichmentOutput)[1])
 names(color) <- enrichmentOutput$Tissue
 
-ggplot(enrichmentOutput, aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
-                               label = Tissue.Specific.Genes, fill=Tissue))+
-  scale_fill_manual(values=color) +
-  geom_bar(stat = 'identity', show.legend = F)+
-  labs(x='', y = '-log10(adj. p-value)')+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
-          element_text(size=25))+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.major= element_blank(),panel.grid.minor = element_blank())+
-  ggtitle("Suryawanshi et al.")
+plotFunc(enrichmentOutput, "Suryawanshi et al.")
 
-#to get genes in each cell types after PlacentaCellEnrich:
-evt2 <- humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output2[[2]]$EVT)[,1], "Gene.name"]
+tpm1genesSu <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
+```
+
+Carry out analysis with Xiang et al. data: <br>
+The expression and object required for `PlacentaCellEnrich` were obtained from Seetharam et al.
+```{r}
+te.dataset.xiang <- readRDS("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/te.dataset.xiang.rds")
+# full names for cell types
+xi.md <-  read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/md-xi.tsv", sep = "\t", header = TRUE, row.names = 1)
+inputGenes<-toupper(c(s1$V1, s2$V1))
+humanOrthologs<-ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+inputGenes<-humanOrthologs$Human.gene.name
+gs <- GeneSet(unique(inputGenes))
+output.xi <- teEnrichmentCustom(gs, te.dataset.xiang)
+en.output.xi <-
+  setNames(data.frame(assay(output.xi[[1]]), row.names = rowData(output.xi[[1]])[, 1]),
+           colData(output.xi[[1]])[, 1])
+en.output.xi$Tissue <- rownames(en.output.xi)
+en.output.xi <- subset(en.output.xi, en.output.xi$Log10PValue >= -log10(0.05) &
+                         en.output.xi$fold.change >= 1.5 &
+                         en.output.xi$Tissue.Specific.Genes >= 5)
+en.output.xi <- en.output.xi[order(-en.output.xi$Log10PValue),]
+#write.table(en.output.xi, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/xiang.txt", sep = "\t", quote = F, row.names = T)
+
+en.output.xi <-
+  setNames(data.frame(assay(output.xi[[1]]), row.names = rowData(output.xi[[1]])[, 1]),
+           colData(output.xi[[1]])[, 1])
+en.output.xi$Tissue <- rownames(en.output.xi)
+en.output.xi <- en.output.xi[order(-en.output.xi$Log10PValue),]
+color <- rep("red3", dim(en.output.xi)[1])
+plotFunc(en.output.xi, "Xiang et al.")
+
+#get expression matrix
+cts.xiang <- as.matrix(read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/combined_555_rawCounts_tpm.txt", sep = "\t", row.names = "Geneid"))
+md.xiang <- read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/metadata_555.txt", sep = "\t", header = FALSE, row.names = 1)
+mycts.t <- as.data.frame(t(cts.xiang))
+metadata <- md.xiang
+colnames(metadata) <- c("days", "celltypes")
+metadata <- metadata[2]
+merged.table <- merge(metadata, mycts.t, by = "row.names", all.x = TRUE)
+merged.table <- merged.table %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+mycts.mean <- aggregate(. ~ celltypes, merged.table, mean)
+ordered <- as.data.frame(t(mycts.mean %>% remove_rownames %>% column_to_rownames(var = "celltypes")))
+
+tpm1genesXi <- rownames(ordered[ordered$EVTs >= 1 & rownames(ordered) %in% inputGenes, ])
+```
+
+Carry out analysis with Castel et al. data: <br>
+Same procedure as in analysis with Xiang et al. dataset.
+```{r}
+te.dataset.castel <- readRDS("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/te.dataset.castel.rds")
+zp.md <- read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/md-zp.tsv", sep = "\t", header = TRUE, row.names = 1)
+inputGenes<-toupper(c(s1$V1, s2$V1))
+humanOrthologs<-ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+inputGenes<-humanOrthologs$Human.gene.name
+gs <- GeneSet(unique(inputGenes))
+output.zp <- teEnrichmentCustom(gs, te.dataset.castel)
+en.output.zp <-
+  setNames(data.frame(assay(output.zp[[1]]), row.names = rowData(output.zp[[1]])[, 1]),
+           colData(output.zp[[1]])[, 1])
+en.output.zp$Tissue <- rownames(en.output.zp)
+en.output.zp <- subset(en.output.zp, en.output.zp$Log10PValue >= -log10(0.05) &
+                         en.output.zp$fold.change >= 1.5 &
+                         en.output.zp$Tissue.Specific.Genes >= 5)
+en.output.zp <- en.output.zp[order(-en.output.zp$Log10PValue),]
+#write.table(en.output.zp, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/castel.txt", sep = "\t", quote = F, row.names = T)
+
+en.output.zp <-
+  setNames(data.frame(assay(output.zp[[1]]), row.names = rowData(output.zp[[1]])[, 1]),
+           colData(output.zp[[1]])[, 1])
+en.output.zp$Tissue <- rownames(en.output.zp)
+en.output.zp <- en.output.zp[order(-en.output.zp$Log10PValue),]
+color <- rep("red3", dim(en.output.zp)[1])
+plotFunc(en.output.zp, "Castel et al.")
+
+#build expression matrix
+cts.castel <- as.matrix(read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/ZhouPetro_rawCounts_tpm.txt", sep = "\t", row.names = "Geneid"))
+md.castel <- read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/metadata_castel.tsv", sep = "\t", header = FALSE, row.names = 1)
+mycts.t <- as.data.frame(t(cts.castel))
+metadata <- md.castel
+colnames(metadata) <- c("days", "celltypes")
+metadata <- metadata[2]
+merged.table <- merge(metadata, mycts.t, by = "row.names", all.x = TRUE)
+merged.table <- merged.table %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+mycts.mean <- aggregate(. ~ celltypes, merged.table, mean)
+ordered <- as.data.frame(t(mycts.mean %>% remove_rownames %>% column_to_rownames(var = "celltypes")))
+
+tpm1genesCas <- rownames(ordered[ordered$EVT >= 1 & rownames(ordered) %in% inputGenes, ])
 ```
 
 Carry out analysis with Liu et al. data: <br>
@@ -164,40 +254,127 @@ df$HE8W_STB <- rowMeans(f[, colnames(f)[grep("HE8W_STB", colnames(f))]])
 df$HE8W_STR <- rowMeans(f[, colnames(f)[grep("HE8W_STR", colnames(f))]])
 rownames(df) <- df$genes
 df <- df[,-1]
+#write.table(df, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/liu.meanTPMlike_byCellTypes.txt", sep = "\t", quote = F, row.names = F)
 se <- SummarizedExperiment(assays = SimpleList(as.matrix(df)), rowData = row.names(df), colData = colnames(df))
 te.dataset <- teGeneRetrieval(se, expressedGeneThreshold = 1, maxNumberOfTissues = 4)
+#save(te.dataset, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/te.dataset.liu.rda")
 ```
 ```{r}
 #Liu et al. dataset
-inputGenes <- toupper(c(s1$V1, s2$V1))
-humanOrthologs <- ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
-inputGenes <- humanOrthologs$Human.gene.name
+inputGenes<-toupper(c(s1$V1, s2$V1))
+humanOrthologs<-ratHumanOrthologs[ratHumanOrthologs$Gene.name %in% inputGenes,]
+inputGenes<-humanOrthologs$Human.gene.name
 gs <- GeneSet(unique(inputGenes))
 output.liu <- teEnrichmentCustom(gs, te.dataset)
 en.output.liu <- setNames(data.frame(assay(output.liu[[1]]),
                                      row.names = rowData(output.liu[[1]])[, 1]), colData(output.liu[[1]])[, 1])
-en.output.liu$Tissue <- rownames(en.output.liu)
+en.output.liu$Tissue <- c("STB from villi at 8 weeks of pregnancy",
+                          "EVT from villi at 8 weeks of pregnancy",
+                          "EVT from decidua at 24 weeks of pregnancy",
+                          "STR from villi at 8 weeks of pregnancy",
+                          "CTB from villi at 8 weeks of pregnancy")
 
-en.output.liu <- subset(en.output.liu, en.output.liu$Log10PValue >= -log10(0.05))
-en.output.liu <- subset(en.output.liu, en.output.liu$fold.change >= 2)
-en.output.liu <- subset(en.output.liu, en.output.liu$Tissue.Specific.Genes >= 5)
+en.output.liu <- subset(en.output.liu, en.output.liu$Log10PValue >= -log10(0.05) &
+                          en.output.liu$fold.change >= 1.5 &
+                          en.output.liu$Tissue.Specific.Genes >= 5)
 en.output.liu <- en.output.liu[order(-en.output.liu$Log10PValue),]
+#write.table(en.output.liu, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/liu.txt", sep = "\t", quote = F, row.names = T)
+
 color <- rep("red3", dim(en.output.liu)[1])
 
-ggplot(en.output.liu,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
-                         label = Tissue.Specific.Genes, fill=Tissue))+
-  scale_fill_manual(values=color) +
-  geom_bar(stat = 'identity', show.legend = F)+
-  labs(x='', y = '-log10(adj. p-value)')+
-  theme_bw()+
-  theme(legend.position='none', plot.margin=unit(c(1,1,1,2),"cm"))+
-  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
-          element_text(size=25))+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.major= element_blank(),panel.grid.minor = element_blank())+
-  ggtitle("Liu et al.")
+plotFunc(en.output.liu, "Liu et al.")
 
-#to get genes in each cell types after PlacentaCellEnrich:
-evt3<-humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output.liu[[2]]$HE8W_EVT)[,1], "Gene.name"]
+expressionData <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/liu.meanTPMlike_byCellTypes.txt", header = T)
+tpm1genesLiu <- rownames(expressionData[(expressionData$HE8W_EVT >= 1 | expressionData$HE24W_EVT >= 1) & rownames(expressionData) %in% inputGenes, ])
+
 ```
   
+We can see the genes showed strong enrichment for extravillous trophoblast cell-specific genes in all 5 datasets. <br>
+
+We then check the expression level of the genes in 2 additional datasets: bulk RNA-seq from Okae et al. and bulk RNA-seq from Morey et al.
+```{r}
+#okae
+okae <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/Okae_et_al_Table_S1.csv", header = T, sep = ",")
+okae_evt <- rowMeans(okae[,c("EVT_1", "EVT_2", "EVT_3")])
+names(okae_evt) <- okae$Gene
+tpm1genesOkae <- intersect(names(okae_evt[which(okae_evt >= 0)]), inputGenes)
+
+
+#morey
+morey <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/Morey_geneLvlTPM.txt", header = T)
+samples <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/Morey_samples.txt", header = F)
+samples$conditions <- sub("_patient.*", "", samples$V2)
+samples$samples <- c(paste0("First_Trimester_CTB", "_", 1:10), paste0("Term_CTB", "_", 1:10),
+                     paste0("First_Trimester_EVT", "_", 1:10), paste0("Term_EVT", "_", 1:6))
+samples <- samples[match(samples$V1, colnames(morey)[1:(ncol(morey)-1)]),]
+colnames(morey) <- c(samples$samples, "emsemblGenes")
+morey$emsemblGenes <- substr(morey$emsemblGenes, 1, 15)
+mean1 <- rowMeans(morey[,paste0("First_Trimester_EVT", "_", 1:10)])
+names(mean1) <- morey$emsemblGenes
+mean2 <- rowMeans(morey[,paste0("Term_EVT", "_", 1:6)])
+names(mean2) <- morey$emsemblGenes
+
+tpm1genesMorey <- ratHumanOrthologs[ratHumanOrthologs$Human.gene.stable.ID %in%
+                                  c(names(mean1[which(mean1 >= 1)]), names(mean2[which(mean2 >= 1)])), ]
+tpm1genesMorey <- intersect(tpm1genesMorey$Human.gene.name, inputGenes)
+```
+
+In the end, we can combine the results from single cell RNA-seq data and bulk RNA-seq data to see if a rat invasive trophoblast gene is expressed (TPM-like, TPM or FPKM $>=$ 1) in human placenta.
+```{r}
+#summary
+df <- as.data.frame(matrix(nrow = length(unique(c(tpm1genesVT, tpm1genesSu, tpm1genesXi,
+                                                  tpm1genesCas, tpm1genesLiu, tpm1genesOkae, tpm1genesMorey))), ncol = 7))
+rownames(df) <- sort(unique(c(tpm1genesVT, tpm1genesSu, tpm1genesXi, tpm1genesCas, tpm1genesLiu,
+                              tpm1genesOkae, tpm1genesMorey)))
+colnames(df) <- c("VentoTormo", "Suryawanshi", "Xiang", "Castel", "Liu", "Okae", "Morey")
+df$VentoTormo <- ifelse(row.names(df) %in% tpm1genesVT, 1, 0)
+df$Suryawanshi <- ifelse(row.names(df) %in% tpm1genesSu, 1, 0)
+df$Xiang <- ifelse(row.names(df) %in% tpm1genesXi, 1, 0)
+df$Castel <- ifelse(row.names(df) %in% tpm1genesCas, 1, 0)
+df$Liu <- ifelse(row.names(df) %in% tpm1genesLiu, 1, 0)
+df$Okae <- ifelse(row.names(df) %in% tpm1genesOkae, 1, 0)
+df$Morey <- ifelse(row.names(df) %in% tpm1genesMorey, 1, 0)
+temp <- ratHumanOrthologs[ratHumanOrthologs$Human.gene.name %in% rownames(df),]
+temp <- temp[order(temp$Human.gene.name),]
+df$ratGenes <- temp$Gene.name
+save(df, file="/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/conservedRat.rda")
+```
+Looking at the number of genes expressed in datasets:
+```{r}
+df2 <- data.frame(SevenDats = length(which(rowSums(df[,1:7]) == 7)),
+                  SixDats = length(which(rowSums(df[,1:7]) == 6)),
+                  FiveDats = length(which(rowSums(df[,1:7]) == 5)),
+                  FourDats = length(which(rowSums(df[,1:7]) == 4)),
+                  ThreeDats = length(which(rowSums(df[,1:7]) == 3)),
+                  TwoDats = length(which(rowSums(df[,1:7]) == 2)),
+                  OneDats = length(which(rowSums(df[,1:7]) == 1)),
+                  ZeroDats = length(unique(c(s1$V1, s2$V1)))-length(which(rowSums(df[,1:7]) >= 1)))
+df
+```
+
+Next, we use GO analysis to look at the functions associated to rat genes expressed in at least one dataset.
+```{r}
+library("org.Rn.eg.db")
+library("clusterProfiler")
+
+load("/work/LAS/geetu-lab/hhvu/project3_scATAC/rnor6.rda")
+go <- function(genes) {
+  GO <- enrichGO(gene = genes, OrgDb=org.Rn.eg.db, ont = "BP", pvalueCutoff = 0.05, qvalueCutoff = 0.05, maxGSSize=500, readable = T, keyType = "ENSEMBL")
+  goSimplify <- simplify(GO)
+  res <- as.data.frame(goSimplify)
+  res$Rank <- seq(1, nrow(res))
+  res$GeneRatio <- sapply(strsplit(res$GeneRatio, "/"), function(x) as.numeric(x[1])/as.numeric(x[2]))
+  res$BgRatio <- sapply(strsplit(res$BgRatio, "/"), function(x) as.numeric(x[1])/as.numeric(x[2]))
+  res$Fold <- as.numeric(res$GeneRatio)/as.numeric(res$BgRatio)
+  res <- res[res$qvalue <= 0.05 & res$Fold >= 2 & res$Count >= 5,]
+  
+  return(res)
+}
+
+genes <- df[which(rowSums(df[,1:7]) >= 2), "ratGenes"]
+g <- rnor6[toupper(rnor6$gene_name) %in% genes,]
+r <- go(g$ensembl_gene_id)
+head(r)
+#write.table(r, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/conservedGenesGO.txt",
+#            sep = "\t", quote = F, row.names = F)
+```

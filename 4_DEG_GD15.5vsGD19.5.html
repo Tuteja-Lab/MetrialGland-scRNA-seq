@@ -375,7 +375,7 @@ DefaultAssay(gd19.5) &lt;- &quot;RNA&quot;
 gd15.5 &lt;- RenameIdents(gd15.5, `0` = &quot;gd15.5_0&quot;, `1` = &quot;gd15.5_1&quot;, `2` = &quot;gd15.5_2&quot;, `3` = &quot;gd15.5_3&quot;, `4` = &quot;gd15.5_4&quot;, `5` = &quot;gd15.5_5&quot;, `6` = &quot;gd15.5_6&quot;, `7` = &quot;gd15.5_7&quot;, `8` = &quot;gd15.5_8&quot;, `9` = &quot;gd15.5_9&quot;, `10` = &quot;gd15.5_10&quot;, `11` = &quot;gd15.5_11&quot;, `12` = &quot;gd15.5_12&quot;, `13` = &quot;gd15.5_13&quot;, `14` = &quot;gd15.5_14&quot;, `15` = &quot;gd15.5_15&quot;, `16` = &quot;gd15.5_16&quot;, `17` = &quot;gd15.5_17&quot;, `18` = &quot;gd15.5_18&quot;, `19` = &quot;gd15.5_19&quot;, `20` = &quot;gd15.5_20&quot;, `21` = &quot;gd15.5_21&quot;, `22` = &quot;gd15.5_22&quot;, `23` = &quot;gd15.5_23-TBC&quot;, `24` = &quot;gd15.5_24&quot;, `25` = &quot;gd15.5_25&quot;, `26` = &quot;gd15.5_26&quot;, `27` = &quot;gd15.5_27&quot;, `28` = &quot;gd15.5_28&quot;)
 
 
-gd19.5 &lt;- RenameIdents(gd19.5, `0` = &quot;gd19.5_0&quot;, `1` = &quot;gd19.5_1&quot;, `2` = &quot;gd19.5_2&quot;, `3` = &quot;gd19.5_3&quot;, `4` = &quot;gd19.5_4&quot;, `5` = &quot;gd19.5_5&quot;, `6` = &quot;gd19.5_6-TBC&quot;, `7` = &quot;gd19.5_7&quot;, `8` = &quot;gd19.5_8&quot;, `9` = &quot;gd19.5_9&quot;, `10` = &quot;gd19.5_10&quot;, `11` = &quot;gd19.5_11&quot;, `12` = &quot;gd19.5_12&quot;, `13` = &quot;gd19.5_13&quot;, `14` = &quot;gd19.5_14&quot;, `15` = &quot;gd19.5_15&quot;, `16` = &quot;gd19.5_16&quot;, `17` = &quot;gd19.5_17&quot;, `18` = &quot;gd19.5_18&quot;, `19` = &quot;gd19.5_19&quot;, `20` = &quot;gd19.5_20&quot;, `21` = &quot;gd19.5_21&quot;, `22` = &quot;gd19.5_22&quot;)
+gd19.5 &lt;- RenameIdents(gd19.5, `0` = &quot;gd19.5_0&quot;, `1` = &quot;gd19.5_1&quot;, `2` = &quot;gd19.5_2&quot;, `3` = &quot;gd19.5_3&quot;, `4` = &quot;gd19.5_4&quot;, `5` = &quot;gd19.5_5&quot;, `6` = &quot;gd19.5_6-TBC&quot;, `7` = &quot;gd19.5_7&quot;, `8` = &quot;gd19.5_8&quot;, `9` = &quot;gd19.5_9&quot;, `10` = &quot;gd19.5_10&quot;, `11` = &quot;gd19.5_11&quot;, `12` = &quot;gd19.5_12&quot;, `13` = &quot;gd19.5_13&quot;, `14` = &quot;gd19.5_14&quot;, `15` = &quot;gd19.5_15&quot;, `16` = &quot;gd19.5_16&quot;, `17` = &quot;gd19.5_17&quot;, `18` = &quot;gd19.5_18&quot;, `19` = &quot;gd19.5_19&quot;, `20` = &quot;gd19.5_20&quot;, `21` = &quot;gd19.5_21&quot;, `22` = &quot;gd19.5_22&quot;, `23` = &quot;gd19.5_23&quot;, `24` = &quot;gd19.5_24&quot;, `25` = &quot;gd19.5_25&quot;, `26` = &quot;gd19.5_26&quot;)
 
 twotimepoint &lt;- merge(gd15.5, gd19.5)
 
@@ -399,7 +399,7 @@ head(gd15.5tbc)
 #&gt; Doxl1     1.122784e-106  -3.019670 0.337 0.825 2.344821e-102
 #&gt; Ftl1       5.152008e-90  -1.035559 0.954 0.994  1.075945e-85
 #&gt; Pfn1       1.115067e-79  -1.087688 0.954 0.997  2.328706e-75
-#write.table(gd15.5tbc, &quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd15.5TBC.txt&quot;, sep = &quot;\t&quot;, row.names = F, quote = F)
+#write.table(gd15.5tbc, &quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd15.5TBC.txt&quot;, sep = &quot;\t&quot;, row.names = T, quote = F)
 
 gd19.5tbc &lt;- subset(trophoblast.markers, trophoblast.markers$p_val_adj &lt;= 0.05 &amp; trophoblast.markers$avg_log2FC &gt;= log2(1.5))
 dim(gd19.5tbc)
@@ -412,7 +412,7 @@ head(gd19.5tbc)
 #&gt; Hsd17b2    5.861047e-64  2.0102776 0.683 0.153 1.224021e-59
 #&gt; Ctsl       7.284066e-63  1.0270451 0.983 0.953 1.521204e-58
 #&gt; Rps15      9.016818e-58  0.8697669 0.969 0.953 1.883072e-53
-#write.table(gd19.5tbc, &quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd19.5TBC.txt&quot;, sep = &quot;\t&quot;, row.names = F, quote = F)</code></pre>
+#write.table(gd19.5tbc, &quot;/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/DEG/gd19.5TBC.txt&quot;, sep = &quot;\t&quot;, row.names = T, quote = F)</code></pre>
 <p>We can assess the functional relevance of the differentially expressed genes at each timepoint using gene ontology analysis.</p>
 <pre class="r"><code>library(&quot;org.Rn.eg.db&quot;)
 library(&quot;clusterProfiler&quot;)
