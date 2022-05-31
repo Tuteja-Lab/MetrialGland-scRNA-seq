@@ -89,28 +89,8 @@ color <- rep("red3", dim(enrichmentOutput)[1])
 names(color) <- enrichmentOutput$Tissue
 plotFunc(enrichmentOutput, "Vento-Tormo et al.")
 
-<<<<<<< HEAD
-#to get genes in each cell types after PlacentaCellEnrich: evt1 <- humanOrthologs[humanOrthologs$Human.gene.stable.ID %in% assay(output2[[2]]$EVT)[,1] , "Gene.name"]
 tpm1genesVT <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
 tpm1genesVT <- ratHumanOrthologs[ratHumanOrthologs$Human.gene.stable.ID %in% tpm1genesVT, "Human.gene.name"]
-=======
-ggplot(enrichmentOutput,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
-                               label = Tissue, fill = Tissue))+
-  scale_fill_manual(values=color) +
-  geom_bar(stat = 'identity', show.legend = FALSE)+
-  labs(x='', y = '-log10(adj. p-value)')+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
-          element_text(size=25))+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  ggtitle("Vento-Tormo et al.")
-
-#to get genes in each cell types after PlacentaCellEnrich:
-evt1 <- humanOrthologs[humanOrthologs$Human.gene.stable.ID %in% assay(output2[[2]]$EVT)[,1] , "Gene.name"]
-tpm1genes1 <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
-
->>>>>>> faba99782833739579cf0fdb22cf28ed33f8cbac
 ```
 
 Carry out analysis with Suryawanshi et al. data:
@@ -148,7 +128,6 @@ enrichmentOutput <- enrichmentOutput[order(-enrichmentOutput$Log10PValue),]
 color <- rep("red3", dim(enrichmentOutput)[1])
 names(color) <- enrichmentOutput$Tissue
 
-<<<<<<< HEAD
 plotFunc(enrichmentOutput, "Suryawanshi et al.")
 
 tpm1genesSu <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
@@ -239,24 +218,6 @@ mycts.mean <- aggregate(. ~ celltypes, merged.table, mean)
 ordered <- as.data.frame(t(mycts.mean %>% remove_rownames %>% column_to_rownames(var = "celltypes")))
 
 tpm1genesCas <- rownames(ordered[ordered$EVT >= 1 & rownames(ordered) %in% inputGenes, ])
-=======
-ggplot(enrichmentOutput, aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
-                               label = Tissue.Specific.Genes, fill=Tissue))+
-  scale_fill_manual(values=color) +
-  geom_bar(stat = 'identity', show.legend = F)+
-  labs(x='', y = '-log10(adj. p-value)')+
-  theme_bw()+
-  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
-          element_text(size=25))+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.major= element_blank(),panel.grid.minor = element_blank())+
-  ggtitle("Suryawanshi et al.")
-
-#to get genes in each cell types after PlacentaCellEnrich:
-evt2 <- humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output2[[2]]$EVT)[,1], "Gene.name"]
-tpm1genes2 <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
-
->>>>>>> faba99782833739579cf0fdb22cf28ed33f8cbac
 ```
 
 Carry out analysis with Liu et al. data: <br>
@@ -292,12 +253,8 @@ df$HE8W_STB <- rowMeans(f[, colnames(f)[grep("HE8W_STB", colnames(f))]])
 df$HE8W_STR <- rowMeans(f[, colnames(f)[grep("HE8W_STR", colnames(f))]])
 rownames(df) <- df$genes
 df <- df[,-1]
-<<<<<<< HEAD
 #write.table(df, "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/liu.meanTPMlike_byCellTypes.txt", sep = "\t", quote = F, row.names = F)
-=======
-write.table(df, "/work/LAS/geetu-lab/hhvu/liu.scRNAseq.humanPlacenta/meanTPMlike_byCellTypes.txt", quote = F, sep = "\t", row.names = T)
 
->>>>>>> faba99782833739579cf0fdb22cf28ed33f8cbac
 se <- SummarizedExperiment(assays = SimpleList(as.matrix(df)), rowData = row.names(df), colData = colnames(df))
 te.dataset <- teGeneRetrieval(se, expressedGeneThreshold = 1, maxNumberOfTissues = 4)
 #save(te.dataset, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/te.dataset.liu.rda")
@@ -325,12 +282,10 @@ en.output.liu <- en.output.liu[order(-en.output.liu$Log10PValue),]
 
 color <- rep("red3", dim(en.output.liu)[1])
 
-<<<<<<< HEAD
 plotFunc(en.output.liu, "Liu et al.")
 
 expressionData <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/liu.meanTPMlike_byCellTypes.txt", header = T)
 tpm1genesLiu <- rownames(expressionData[(expressionData$HE8W_EVT >= 1 | expressionData$HE24W_EVT >= 1) & rownames(expressionData) %in% inputGenes, ])
-
 ```
   
 We can see the genes showed strong enrichment for extravillous trophoblast cell-specific genes in all 5 datasets. <br>
@@ -361,25 +316,6 @@ names(mean2) <- morey$emsemblGenes
 tpm1genesMorey <- ratHumanOrthologs[ratHumanOrthologs$Human.gene.stable.ID %in%
                                   c(names(mean1[which(mean1 >= 1)]), names(mean2[which(mean2 >= 1)])), ]
 tpm1genesMorey <- intersect(tpm1genesMorey$Human.gene.name, inputGenes)
-=======
-ggplot(en.output.liu,aes(x=reorder(Tissue,-Log10PValue),y=Log10PValue,
-                         label = Tissue.Specific.Genes, fill=Tissue))+
-  scale_fill_manual(values=color) +
-  geom_bar(stat = 'identity', show.legend = F)+
-  labs(x='', y = '-log10(adj. p-value)')+
-  theme_bw()+
-  theme(legend.position='none', plot.margin=unit(c(1,1,1,2),"cm"))+
-  theme(plot.title = element_text(hjust = 0.5,size = 25),axis.title =
-          element_text(size=25))+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.major= element_blank(),panel.grid.minor = element_blank())+
-  ggtitle("Liu et al.")
-
-#to get genes in each cell types after PlacentaCellEnrich:
-evt3<-humanOrthologs[humanOrthologs$Human.gene.name %in% assay(output.liu[[2]]$HE8W_EVT)[,1], "Gene.name"]
-tpm1genes3 <- rownames(df[df$HE8W_EVT >= 1 | df$HE24W_EVT >= 1 & rownames(df) %in% inputGenes, ])
-
->>>>>>> faba99782833739579cf0fdb22cf28ed33f8cbac
 ```
 
 In the end, we can combine the results from single cell RNA-seq data and bulk RNA-seq data to see if a rat invasive trophoblast gene is expressed (TPM-like, TPM or FPKM $>=$ 1) in human placenta.
@@ -400,7 +336,7 @@ df$Morey <- ifelse(row.names(df) %in% tpm1genesMorey, 1, 0)
 temp <- ratHumanOrthologs[ratHumanOrthologs$Human.gene.name %in% rownames(df),]
 temp <- temp[order(temp$Human.gene.name),]
 df$ratGenes <- temp$Gene.name
-save(df, file="/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/conservedRat.rda")
+#save(df, file="/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/conservedRat.rda")
 ```
 Looking at the number of genes expressed in datasets:
 ```{r}
