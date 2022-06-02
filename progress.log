@@ -2,3 +2,6 @@
 - I edited the script 3_markers_annotation.Rmd to 1) include the correct markers; 2) add the feaature plots showing expression levels of markers on UMAP; 3) change names of cell types. Not yet reknit this new version as of 11:45 am.
 - Finished up script 4_DEG_GD15.5vsGD19.5.Rmd so that GD19.5 has positive log2(fold). Add GO analysis. Done knitting as of 1:30 pm.
 - Updated script to look at conserved markers. Still waiting for EVT data from Mana Lab to finish up checking expression level of conserved genes.
+
+2022/6/1
+- Finished knitting step 4 and 5. Still knitting step 3 in the background.
