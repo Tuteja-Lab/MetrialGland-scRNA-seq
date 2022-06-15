@@ -32,9 +32,12 @@ set.seed(1234)
 
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD15.5/gd15.5_res0.8.rda")
 gd15.5 <- data
+gd15.5$sample <- substr(names(gd15.5$orig.ident), 1, 6)
 
 load("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/3_cluster_DEG/rmChrMTgenes/GD19.5/gd19.5-4-5-6-7_res0.8.rda")
 gd19.5 <- data2
+gd19.5$sample <- ifelse(names(gd19.5$orig.ident) == "19.5_7", names(gd19.5$orig.ident),
+                        substr(names(gd19.5$orig.ident), 1, 6))
 
 DefaultAssay(gd15.5) <- "RNA"
 DefaultAssay(gd19.5) <- "RNA"
@@ -49,7 +52,6 @@ twotimepoint <- merge(gd15.5, gd19.5)
 DefaultAssay(twotimepoint) <- "RNA"
 
 #save(twotimepoint, file = "/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/4_twoTimepoints/rmChrMTgenes/twotimepoint.rda")
-
 
 trophoblast.markers <- FindMarkers(twotimepoint, ident.1 = "gd19.5_6-TBC", ident.2 = "gd15.5_23-TBC", verbose = FALSE, logfc.threshold = 0) 
 
