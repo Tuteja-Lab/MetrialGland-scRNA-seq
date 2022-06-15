@@ -51,7 +51,6 @@ plotFunc <- function(data, name) {
     ggtitle(name)
   return(p)
 }
-
 ```
 Carry out analysis with Vento-Tormo et al. data:
 ```{r}
@@ -88,7 +87,6 @@ enrichmentOutput <- enrichmentOutput[order(-enrichmentOutput$Log10PValue),]
 color <- rep("red3", dim(enrichmentOutput)[1])
 names(color) <- enrichmentOutput$Tissue
 plotFunc(enrichmentOutput, "Vento-Tormo et al.")
-
 tpm1genesVT <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
 tpm1genesVT <- ratHumanOrthologs[ratHumanOrthologs$Human.gene.stable.ID %in% tpm1genesVT, "Human.gene.name"]
 ```
@@ -129,7 +127,6 @@ color <- rep("red3", dim(enrichmentOutput)[1])
 names(color) <- enrichmentOutput$Tissue
 
 plotFunc(enrichmentOutput, "Suryawanshi et al.")
-
 tpm1genesSu <- rownames(expressionData[expressionData$EVT >= 1 & rownames(expressionData) %in% inputGenes, ])
 ```
 
@@ -161,7 +158,6 @@ en.output.xi$Tissue <- rownames(en.output.xi)
 en.output.xi <- en.output.xi[order(-en.output.xi$Log10PValue),]
 color <- rep("red3", dim(en.output.xi)[1])
 plotFunc(en.output.xi, "Xiang et al.")
-
 #get expression matrix
 cts.xiang <- as.matrix(read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/combined_555_rawCounts_tpm.txt", sep = "\t", row.names = "Geneid"))
 md.xiang <- read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/metadata_555.txt", sep = "\t", header = FALSE, row.names = 1)
@@ -204,7 +200,6 @@ en.output.zp$Tissue <- rownames(en.output.zp)
 en.output.zp <- en.output.zp[order(-en.output.zp$Log10PValue),]
 color <- rep("red3", dim(en.output.zp)[1])
 plotFunc(en.output.zp, "Castel et al.")
-
 #build expression matrix
 cts.castel <- as.matrix(read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/ZhouPetro_rawCounts_tpm.txt", sep = "\t", row.names = "Geneid"))
 md.castel <- read.csv("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/metadata_castel.tsv", sep = "\t", header = FALSE, row.names = 1)
@@ -279,7 +274,6 @@ en.output.liu <- en.output.liu[order(-en.output.liu$Log10PValue),]
 color <- rep("red3", dim(en.output.liu)[1])
 
 plotFunc(en.output.liu, "Liu et al.")
-
 expressionData <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/liu.meanTPMlike_byCellTypes.txt", header = T)
 tpm1genesLiu <- rownames(expressionData[(expressionData$HE8W_EVT >= 1 | expressionData$HE24W_EVT >= 1) & rownames(expressionData) %in% inputGenes, ])
 ```
@@ -293,7 +287,6 @@ okae <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/
 okae_evt <- rowMeans(okae[,c("EVT_1", "EVT_2", "EVT_3")])
 names(okae_evt) <- okae$Gene
 tpm1genesOkae <- intersect(names(okae_evt[which(okae_evt >= 0)]), inputGenes)
-
 
 #morey
 morey <- read.table("/work/LAS/geetu-lab/hhvu/project3_scATAC/scRNA-seq-analysis/7_conserved/Morey_geneLvlTPM.txt", header = T)
@@ -344,7 +337,7 @@ df2 <- data.frame(SevenDats = length(which(rowSums(df[,1:7]) == 7)),
                   TwoDats = length(which(rowSums(df[,1:7]) == 2)),
                   OneDats = length(which(rowSums(df[,1:7]) == 1)),
                   ZeroDats = length(unique(c(s1$V1, s2$V1)))-length(which(rowSums(df[,1:7]) >= 1)))
-df
+df2
 ```
 
 Next, we use GO analysis to look at the functions associated to rat genes expressed in at least one dataset.
